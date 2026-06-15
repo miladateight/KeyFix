@@ -1,0 +1,34 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyboardLanguageGuard.Core", "src\KeyboardLanguageGuard.Core\KeyboardLanguageGuard.Core.csproj", "{6AB0FD8D-4F11-4D94-9C67-746308B05587}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyboardLanguageGuard.App", "src\KeyboardLanguageGuard.App\KeyboardLanguageGuard.App.csproj", "{7B7BCF35-2097-4D3D-9C7C-7F41017296D0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyboardLanguageGuard.Tests", "tests\KeyboardLanguageGuard.Tests\KeyboardLanguageGuard.Tests.csproj", "{86B61761-F605-4950-B0B7-C2D4E8C370B9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6AB0FD8D-4F11-4D94-9C67-746308B05587}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6AB0FD8D-4F11-4D94-9C67-746308B05587}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6AB0FD8D-4F11-4D94-9C67-746308B05587}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6AB0FD8D-4F11-4D94-9C67-746308B05587}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B7BCF35-2097-4D3D-9C7C-7F41017296D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B7BCF35-2097-4D3D-9C7C-7F41017296D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B7BCF35-2097-4D3D-9C7C-7F41017296D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B7BCF35-2097-4D3D-9C7C-7F41017296D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86B61761-F605-4950-B0B7-C2D4E8C370B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86B61761-F605-4950-B0B7-C2D4E8C370B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86B61761-F605-4950-B0B7-C2D4E8C370B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86B61761-F605-4950-B0B7-C2D4E8C370B9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
+

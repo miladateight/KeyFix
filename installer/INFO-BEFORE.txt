@@ -1,0 +1,8 @@
+KeyFix
+
+Publisher: Milad AT8
+GitHub: https://github.com/miladateight
+
+This app runs locally on Windows and helps detect likely wrong keyboard layout while typing.
+
+Special thanks to Ashkan Gharib for the idea that helped shape this app.
