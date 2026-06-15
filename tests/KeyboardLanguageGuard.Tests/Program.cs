@@ -57,6 +57,12 @@ Assert(germanResult.TextToInsert.Equals("zeit", StringComparison.OrdinalIgnoreCa
 DetectionResult normalPersian = detector.Detect("\u0633\u0644\u0627\u0645 \u0645\u0646", LanguageKind.Persian, settings);
 Assert(!normalPersian.ShouldAlert, "Detector does not alert for normal Persian text.");
 
+DetectionResult normalPersianWord = detector.Detect("\u0628\u0627\u0642\u06cc", LanguageKind.Persian, settings);
+Assert(!normalPersianWord.ShouldAlert, "Detector does not alert for a normal Persian word that maps to random Latin text.");
+
+DetectionResult mixedAccidentalCharacter = detector.Detect("\u0627\u062b\u0645\u0645o", LanguageKind.Persian, settings);
+Assert(!mixedAccidentalCharacter.ShouldAlert, "Detector does not auto-correct mixed-script partial words.");
+
 DetectionResult normalEnglish = detector.Detect("hello and thanks", LanguageKind.English, settings);
 Assert(!normalEnglish.ShouldAlert, "Detector does not alert for normal English text.");
 

@@ -21,6 +21,8 @@ KeyFix 0.3.1 improves the first-launch experience and uninstall cleanup.
 - Packaging now generates a SHA256 file for the newest installer automatically.
 - Fixed automatic switching so KeyFix still changes to the detected target language even if text replacement fails in the focused app.
 - Made clipboard paste the primary replacement method for better compatibility with common Windows apps.
+- Removed user-editable detection threshold/minimum character controls.
+- Added safer internal per-language detection rules to reduce false positives for normal Persian/Arabic text and mixed-script partial words.
 
 ## After Installing
 

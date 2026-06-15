@@ -11,8 +11,6 @@ public sealed class SettingsForm : Form
     private readonly CheckBox _arabic = new() { Text = "Arabic", AutoSize = true };
     private readonly CheckBox _german = new() { Text = "German", AutoSize = true };
     private readonly ComboBox _mode = new() { DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly NumericUpDown _threshold = new() { Minimum = 4, Maximum = 40, Value = 8 };
-    private readonly NumericUpDown _minimumCharacters = new() { Minimum = 3, Maximum = 30, Value = 5 };
     private readonly CheckBox _playSound = new() { Text = "Play alert sound", AutoSize = true };
     private readonly CheckBox _showNotification = new() { Text = "Show Windows tray notification", AutoSize = true };
     private readonly CheckBox _autoCorrectTypedText = new() { Text = "Correct mistyped word automatically in AutoSwitch mode", AutoSize = true };
@@ -48,11 +46,11 @@ public sealed class SettingsForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(18),
             ColumnCount = 1,
-            RowCount = 12
+            RowCount = 10
         };
 
         root.RowStyles.Clear();
-        for (int index = 0; index < 12; index++)
+        for (int index = 0; index < 10; index++)
         {
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         }
@@ -74,8 +72,6 @@ public sealed class SettingsForm : Form
         root.Controls.Add(intro);
         root.Controls.Add(languages);
         root.Controls.Add(Field("Mode", _mode));
-        root.Controls.Add(Field("Detection threshold", _threshold));
-        root.Controls.Add(Field("Minimum characters", _minimumCharacters));
         root.Controls.Add(_playSound);
         root.Controls.Add(_showNotification);
         root.Controls.Add(_autoCorrectTypedText);
@@ -148,8 +144,6 @@ public sealed class SettingsForm : Form
         _arabic.Checked = Settings.IsLanguageEnabled(LanguageKind.Arabic);
         _german.Checked = Settings.IsLanguageEnabled(LanguageKind.German);
         _mode.SelectedItem = Settings.Mode.ToString();
-        _threshold.Value = Settings.DetectionThreshold;
-        _minimumCharacters.Value = Settings.MinimumCharacters;
         _playSound.Checked = Settings.PlaySound;
         _showNotification.Checked = Settings.ShowNotification;
         _autoCorrectTypedText.Checked = Settings.AutoCorrectTypedText;
@@ -174,8 +168,6 @@ public sealed class SettingsForm : Form
         Settings.SettingsVersion = AppSettings.CurrentSettingsVersion;
         Settings.FirstRunCompleted = true;
         Settings.Mode = Enum.Parse<DetectionMode>(_mode.SelectedItem?.ToString() ?? nameof(DetectionMode.AutoSwitch));
-        Settings.DetectionThreshold = (int)_threshold.Value;
-        Settings.MinimumCharacters = (int)_minimumCharacters.Value;
         Settings.PlaySound = _playSound.Checked;
         Settings.ShowNotification = _showNotification.Checked;
         Settings.AutoCorrectTypedText = _autoCorrectTypedText.Checked;

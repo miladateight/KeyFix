@@ -8,7 +8,9 @@ public sealed class LanguageDetector
     private static readonly string[] EnglishHints =
     [
         "the", "and", "you", "that", "have", "for", "not", "with", "this", "hello", "thanks", "please",
-        "what", "when", "where", "how", "good", "morning", "night", "email", "project", "key", "fix"
+        "what", "when", "where", "how", "good", "morning", "night", "email", "project", "key", "fix",
+        "yes", "no", "ok", "okay", "test", "text", "code", "user", "admin", "login", "windows", "github",
+        "milad", "keyfix", "keyboard", "language", "error", "file", "app", "release"
     ];
 
     private static readonly string[] GermanHints =
@@ -34,7 +36,7 @@ public sealed class LanguageDetector
     public DetectionResult Detect(string text, LanguageKind currentLanguage, AppSettings settings)
     {
         string normalized = NormalizeText(text);
-        if (normalized.Length < settings.MinimumCharacters || !settings.IsLanguageEnabled(currentLanguage))
+        if (normalized.Length < MinimumCharacters(currentLanguage) || !settings.IsLanguageEnabled(currentLanguage))
         {
             return DetectionResult.None;
         }
@@ -46,10 +48,10 @@ public sealed class LanguageDetector
         {
             string transformed = KeyboardLayoutMaps.Transform(normalized, currentLanguage, profile.Language);
             int candidateScore = Score(profile.Language, transformed);
-            candidateScore += ScoreLayoutMismatch(currentLanguage, profile.Language, normalized, transformed);
             int difference = candidateScore - currentScore;
 
-            if (difference < settings.DetectionThreshold || difference <= best.ScoreDifference)
+            if (!IsReliableCandidate(currentLanguage, profile.Language, normalized, transformed, difference) ||
+                difference <= best.ScoreDifference)
             {
                 continue;
             }
@@ -138,22 +140,108 @@ public sealed class LanguageDetector
         return score;
     }
 
-    private static int ScoreLayoutMismatch(
+    private static bool IsReliableCandidate(
         LanguageKind currentLanguage,
         LanguageKind candidateLanguage,
         string observedText,
-        string transformedText)
+        string transformedText,
+        int scoreDifference)
     {
+        if (scoreDifference < Threshold(currentLanguage, candidateLanguage))
+        {
+            return false;
+        }
+
         if (currentLanguage is LanguageKind.Persian or LanguageKind.Arabic &&
-            candidateLanguage is LanguageKind.English or LanguageKind.German &&
-            observedText.Any(IsArabicBlock) &&
-            transformedText.Length >= 4 &&
-            transformedText.All(IsBasicLatin))
+            candidateLanguage is LanguageKind.English or LanguageKind.German)
+        {
+            if (observedText.Any(IsBasicLatin))
+            {
+                return false;
+            }
+
+            return IsStrongLatinCandidate(candidateLanguage, transformedText);
+        }
+
+        if (currentLanguage is LanguageKind.English or LanguageKind.German &&
+            candidateLanguage is LanguageKind.Persian or LanguageKind.Arabic)
+        {
+            return transformedText.Any(IsArabicBlock) && HasHint(candidateLanguage, transformedText);
+        }
+
+        return HasHint(candidateLanguage, transformedText);
+    }
+
+    private static int MinimumCharacters(LanguageKind language)
+    {
+        return language switch
+        {
+            LanguageKind.English or LanguageKind.German => 4,
+            LanguageKind.Persian or LanguageKind.Arabic => 4,
+            _ => 4
+        };
+    }
+
+    private static int Threshold(LanguageKind currentLanguage, LanguageKind candidateLanguage)
+    {
+        if (currentLanguage is LanguageKind.English or LanguageKind.German &&
+            candidateLanguage is LanguageKind.English or LanguageKind.German)
         {
             return 10;
         }
 
-        return 0;
+        if (currentLanguage is LanguageKind.Persian or LanguageKind.Arabic &&
+            candidateLanguage is LanguageKind.English or LanguageKind.German)
+        {
+            return 10;
+        }
+
+        if (currentLanguage is LanguageKind.English or LanguageKind.German &&
+            candidateLanguage is LanguageKind.Persian or LanguageKind.Arabic)
+        {
+            return 8;
+        }
+
+        return 12;
+    }
+
+    private static bool IsStrongLatinCandidate(LanguageKind language, string text)
+    {
+        string lower = text.ToLowerInvariant();
+        if (HasHint(language, lower))
+        {
+            return true;
+        }
+
+        if (lower.Length < 5 || !lower.All(IsBasicLatin))
+        {
+            return false;
+        }
+
+        int vowels = lower.Count(static item => "aeiou".Contains(item));
+        bool hasCommonEnglishShape = language == LanguageKind.English &&
+            vowels >= 2 &&
+            (lower.EndsWith("ing", StringComparison.Ordinal) ||
+             lower.EndsWith("ed", StringComparison.Ordinal) ||
+             lower.EndsWith("er", StringComparison.Ordinal) ||
+             lower.EndsWith("ion", StringComparison.Ordinal));
+
+        bool hasCommonGermanShape = language == LanguageKind.German &&
+            vowels >= 2 &&
+            (lower.EndsWith("en", StringComparison.Ordinal) ||
+             lower.EndsWith("er", StringComparison.Ordinal) ||
+             lower.Contains("sch", StringComparison.Ordinal) ||
+             lower.Contains("ei", StringComparison.Ordinal));
+
+        return hasCommonEnglishShape || hasCommonGermanShape;
+    }
+
+    private static bool HasHint(LanguageKind language, string text)
+    {
+        string lower = text.ToLowerInvariant();
+        return Hints(language).Any(word =>
+            lower.Equals(word, StringComparison.OrdinalIgnoreCase) ||
+            lower.Contains(word, StringComparison.OrdinalIgnoreCase));
     }
 
     private static IReadOnlyList<string> Hints(LanguageKind language)

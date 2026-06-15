@@ -8,6 +8,8 @@
 - Improved uninstall cleanup for KeyFix settings, legacy settings, startup registry value, and leftover app data folders.
 - Updated packaging to generate SHA256 for the newest generated installer automatically.
 - Fixed auto-switch so the target keyboard language changes even when text replacement fails, and made clipboard paste the primary text replacement path for better app compatibility.
+- Removed user-editable detection threshold/minimum character controls and replaced them with internal per-language rules.
+- Reduced false positives for normal Persian/Arabic words and mixed-script partial words.
 
 ## 0.3.0 - 2026-06-15
 
