@@ -31,14 +31,18 @@ public sealed class KeyboardHookService : IDisposable
 
     public event EventHandler? BreakKeyPressed;
 
-    public void Start()
+    public int LastStartError { get; private set; }
+
+    public bool Start()
     {
         if (_hook != IntPtr.Zero)
         {
-            return;
+            return true;
         }
 
         _hook = SetWindowsHookEx(WhKeyboardLl, _callback, GetModuleHandle(null), 0);
+        LastStartError = _hook == IntPtr.Zero ? Marshal.GetLastWin32Error() : 0;
+        return _hook != IntPtr.Zero;
     }
 
     public void Stop()

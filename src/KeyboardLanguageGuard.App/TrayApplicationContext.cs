@@ -21,6 +21,7 @@ public sealed class TrayApplicationContext : ApplicationContext
     private AppSettings _settings;
     private bool _paused;
     private DateTimeOffset _lastAlert = DateTimeOffset.MinValue;
+    private long _inputVersion;
 
     public TrayApplicationContext(SettingsStore settingsStore)
     {
@@ -42,9 +43,15 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         _hookService = new KeyboardHookService(_layoutService);
         _hookService.CharacterTyped += OnCharacterTyped;
-        _hookService.BackspacePressed += (_, _) => _buffer.Backspace();
-        _hookService.BreakKeyPressed += (_, _) => _buffer.Clear();
-        _hookService.Start();
+        _hookService.BackspacePressed += OnBackspacePressed;
+        _hookService.BreakKeyPressed += OnBreakKeyPressed;
+        if (!_hookService.Start())
+        {
+            _paused = true;
+            _notifyIcon.BalloonTipTitle = "KeyFix could not start protection";
+            _notifyIcon.BalloonTipText = $"Windows keyboard hook failed. Error: {_hookService.LastStartError}";
+            _notifyIcon.ShowBalloonTip(5000);
+        }
     }
 
     protected override void Dispose(bool disposing)
@@ -103,8 +110,17 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private void OnCharacterTyped(object? sender, char character)
     {
-        if (_paused || IsForegroundProcessExcluded())
+        _inputVersion++;
+        if (_paused)
         {
+            _buffer.Clear();
+            return;
+        }
+
+        IntPtr foregroundWindow = _layoutService.GetForegroundWindowHandle();
+        if (foregroundWindow == IntPtr.Zero || IsForegroundProcessExcluded())
+        {
+            _buffer.Clear();
             return;
         }
 
@@ -129,12 +145,30 @@ public sealed class TrayApplicationContext : ApplicationContext
         }
 
         string trailingWhitespace = _buffer.TrailingWhitespace;
-        CorrectionRequest request = new(correctionScope, trailingWhitespace, currentLanguage.Value);
+        CorrectionRequest request = new(
+            correctionScope,
+            trailingWhitespace,
+            currentLanguage.Value,
+            foregroundWindow,
+            _inputVersion);
+
         _ = Task.Run(async () =>
         {
-            await Task.Delay(60).ConfigureAwait(false);
+            await Task.Delay(80).ConfigureAwait(false);
             _uiContext.Post(_ => ProcessCorrectionRequest(request), null);
         });
+    }
+
+    private void OnBackspacePressed(object? sender, EventArgs eventArgs)
+    {
+        _inputVersion++;
+        _buffer.Backspace();
+    }
+
+    private void OnBreakKeyPressed(object? sender, EventArgs eventArgs)
+    {
+        _inputVersion++;
+        _buffer.Clear();
     }
 
     private bool IsForegroundProcessExcluded()
@@ -151,6 +185,13 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private void ProcessCorrectionRequest(CorrectionRequest request)
     {
+        if (request.InputVersion != _inputVersion ||
+            !_layoutService.IsForegroundWindow(request.ForegroundWindow) ||
+            IsForegroundProcessExcluded())
+        {
+            return;
+        }
+
         DetectionResult result = _detector.Detect(request.Scope, request.CurrentLanguage, _settings);
         if (!result.ShouldAlert)
         {
@@ -166,8 +207,11 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         if (_settings.Mode == DetectionMode.AutoSwitch)
         {
-            ApplyAutoFix(result, request.TrailingWhitespace);
-            _buffer.Clear();
+            bool fixedText = ApplyAutoFix(result, request.TrailingWhitespace);
+            if (fixedText)
+            {
+                _buffer.Clear();
+            }
         }
 
         if (canNotify && _settings.ShowNotification)
@@ -191,21 +235,29 @@ public sealed class TrayApplicationContext : ApplicationContext
         _notifyIcon.ShowBalloonTip(2500);
     }
 
-    private void ApplyAutoFix(DetectionResult result, string trailingWhitespace)
+    private bool ApplyAutoFix(DetectionResult result, string trailingWhitespace)
     {
         int charactersToReplace = result.CharactersToReplace + trailingWhitespace.Length;
         string textToInsert = result.TextToInsert + trailingWhitespace;
+        bool fixedText = true;
 
         if (_settings.AutoCorrectTypedText)
         {
-            _textCorrectionService.ReplaceTextBeforeCursor(charactersToReplace, textToInsert);
+            fixedText = _textCorrectionService.ReplaceTextBeforeCursor(charactersToReplace, textToInsert);
         }
 
-        _layoutService.SwitchTo(result.SuggestedLanguage);
+        if (fixedText)
+        {
+            _layoutService.SwitchTo(result.SuggestedLanguage);
+        }
+
+        return fixedText;
     }
 
     private readonly record struct CorrectionRequest(
         string Scope,
         string TrailingWhitespace,
-        LanguageKind CurrentLanguage);
+        LanguageKind CurrentLanguage,
+        IntPtr ForegroundWindow,
+        long InputVersion);
 }

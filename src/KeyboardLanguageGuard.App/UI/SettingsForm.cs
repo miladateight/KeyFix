@@ -148,7 +148,8 @@ public sealed class SettingsForm : Form
 
     private void SaveSettings()
     {
-        Settings.Mode = Enum.Parse<DetectionMode>(_mode.SelectedItem?.ToString() ?? nameof(DetectionMode.AlertOnly));
+        Settings.SettingsVersion = AppSettings.CurrentSettingsVersion;
+        Settings.Mode = Enum.Parse<DetectionMode>(_mode.SelectedItem?.ToString() ?? nameof(DetectionMode.AutoSwitch));
         Settings.DetectionThreshold = (int)_threshold.Value;
         Settings.MinimumCharacters = (int)_minimumCharacters.Value;
         Settings.PlaySound = _playSound.Checked;
@@ -175,6 +176,7 @@ public sealed class SettingsForm : Form
         return new AppSettings
         {
             Mode = settings.Mode,
+            SettingsVersion = settings.SettingsVersion,
             DetectionThreshold = settings.DetectionThreshold,
             MinimumCharacters = settings.MinimumCharacters,
             PlaySound = settings.PlaySound,

@@ -24,8 +24,8 @@ jobs:
       - name: Run tests
         run: dotnet run --project tests/KeyboardLanguageGuard.Tests/KeyboardLanguageGuard.Tests.csproj --configuration Release
 
-      - name: Publish app
-        run: dotnet publish src/KeyboardLanguageGuard.App/KeyboardLanguageGuard.App.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/publish
+      - name: Publish self-contained app
+        run: dotnet publish src/KeyboardLanguageGuard.App/KeyboardLanguageGuard.App.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/publish
 
       - name: Upload publish artifact
         uses: actions/upload-artifact@v4

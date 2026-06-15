@@ -17,7 +17,14 @@ void Assert(bool condition, string message)
 AppSettings settings = new()
 {
     DetectionThreshold = 8,
-    MinimumCharacters = 5
+    MinimumCharacters = 3,
+    Languages =
+    [
+        new() { Language = LanguageKind.English, Enabled = true },
+        new() { Language = LanguageKind.Persian, Enabled = true },
+        new() { Language = LanguageKind.Arabic, Enabled = true },
+        new() { Language = LanguageKind.German, Enabled = true }
+    ]
 };
 
 LanguageDetector detector = new();
@@ -31,6 +38,21 @@ Assert(englishResult.ShouldAlert, "Detector catches likely English typed under P
 Assert(englishResult.SuggestedLanguage == LanguageKind.English, "Detector suggests English for Persian-layout Latin intent.");
 Assert(englishResult.CharactersToReplace == persianMistake.Length, "Detector reports replacement length.");
 Assert(englishResult.TextToInsert.Equals("hello", StringComparison.OrdinalIgnoreCase), "Detector reports text to insert.");
+
+string englishMistakeForPersian = "sghl";
+DetectionResult persianResult = detector.Detect(englishMistakeForPersian, LanguageKind.English, settings);
+Assert(persianResult.ShouldAlert, "Detector catches likely Persian typed under English layout.");
+Assert(persianResult.SuggestedLanguage == LanguageKind.Persian, "Detector suggests Persian for English-layout Persian intent.");
+Assert(persianResult.TextToInsert == "\u0633\u0644\u0627\u0645", "Detector maps English-layout Persian intent to Persian text.");
+
+DetectionResult arabicResult = detector.Detect(persianMistake, LanguageKind.Arabic, settings);
+Assert(arabicResult.ShouldAlert, "Detector catches likely English typed under Arabic layout.");
+Assert(arabicResult.SuggestedLanguage == LanguageKind.English, "Detector suggests English for Arabic-layout Latin intent.");
+
+DetectionResult germanResult = detector.Detect("yeit", LanguageKind.English, settings);
+Assert(germanResult.ShouldAlert, "Detector catches likely German typed under English layout.");
+Assert(germanResult.SuggestedLanguage == LanguageKind.German, "Detector suggests German for English-layout German intent.");
+Assert(germanResult.TextToInsert.Equals("zeit", StringComparison.OrdinalIgnoreCase), "Detector maps QWERTY/QWERTZ mismatch to German text.");
 
 DetectionResult normalPersian = detector.Detect("\u0633\u0644\u0627\u0645 \u0645\u0646", LanguageKind.Persian, settings);
 Assert(!normalPersian.ShouldAlert, "Detector does not alert for normal Persian text.");

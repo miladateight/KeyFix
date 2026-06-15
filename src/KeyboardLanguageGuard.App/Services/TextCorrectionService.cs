@@ -1,4 +1,6 @@
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
+
 namespace KeyboardLanguageGuard.App.Services;
 
 public sealed class TextCorrectionService
@@ -23,7 +25,7 @@ public sealed class TextCorrectionService
             }
 
             Thread.Sleep(20);
-            return SendUnicodeText(replacement);
+            return SendUnicodeText(replacement) || PasteText(replacement);
         }
         catch
         {
@@ -56,6 +58,54 @@ public sealed class TextCorrectionService
         }
 
         return SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>()) == inputs.Length;
+    }
+
+    private static bool PasteText(string text)
+    {
+        IDataObject? previousClipboard = null;
+        try
+        {
+            previousClipboard = Clipboard.GetDataObject();
+            Clipboard.SetText(text, TextDataFormat.UnicodeText);
+            SendChord(0x11, 0x56);
+            Thread.Sleep(120);
+
+            if (previousClipboard is not null)
+            {
+                Clipboard.SetDataObject(previousClipboard, true);
+            }
+
+            return true;
+        }
+        catch
+        {
+            try
+            {
+                if (previousClipboard is not null)
+                {
+                    Clipboard.SetDataObject(previousClipboard, true);
+                }
+            }
+            catch
+            {
+                // Clipboard restore can fail if another process locks it.
+            }
+
+            return false;
+        }
+    }
+
+    private static void SendChord(ushort modifier, ushort key)
+    {
+        Input[] inputs =
+        [
+            KeyboardInput(modifier, 0, 0),
+            KeyboardInput(key, 0, 0),
+            KeyboardInput(key, 0, KeyEventKeyUp),
+            KeyboardInput(modifier, 0, KeyEventKeyUp)
+        ];
+
+        SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>());
     }
 
     private static Input KeyboardInput(ushort virtualKey, ushort scanCode, uint flags)

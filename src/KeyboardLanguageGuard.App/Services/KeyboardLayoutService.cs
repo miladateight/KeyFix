@@ -16,6 +16,16 @@ public sealed class KeyboardLayoutService
         return GetKeyboardLayout(threadId);
     }
 
+    public IntPtr GetForegroundWindowHandle()
+    {
+        return GetForegroundWindow();
+    }
+
+    public bool IsForegroundWindow(IntPtr windowHandle)
+    {
+        return windowHandle != IntPtr.Zero && GetForegroundWindow() == windowHandle;
+    }
+
     public LanguageKind? GetCurrentLanguage()
     {
         IntPtr layout = GetCurrentKeyboardLayoutHandle();

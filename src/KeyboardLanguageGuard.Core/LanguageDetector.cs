@@ -14,7 +14,7 @@ public sealed class LanguageDetector
     private static readonly string[] GermanHints =
     [
         "der", "die", "das", "und", "ich", "nicht", "mit", "ein", "eine", "ist", "danke", "bitte",
-        "hallo", "guten", "morgen", "abend", "projekt", "diese", "haben", "werden"
+        "hallo", "guten", "morgen", "abend", "projekt", "diese", "haben", "werden", "zeit", "zwei"
     ];
 
     private static readonly string[] PersianHints =

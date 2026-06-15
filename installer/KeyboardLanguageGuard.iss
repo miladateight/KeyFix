@@ -1,5 +1,5 @@
 #define MyAppName "KeyFix"
-#define MyAppVersion "0.2.0"
+#define MyAppVersion "0.3.0"
 #define MyAppPublisher "Milad AT8"
 #define MyAppURL "https://github.com/miladateight/KeyFix"
 #define MyAppExeName "KeyFix.exe"

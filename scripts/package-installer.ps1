@@ -34,3 +34,10 @@ $isccPath = if ($null -ne $sourceProperty -and -not [string]::IsNullOrWhiteSpace
 }
 & $isccPath ".\installer\KeyboardLanguageGuard.iss"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+$installer = Join-Path $root "artifacts\installer\KeyFixSetup-0.3.0.exe"
+if (Test-Path $installer) {
+    $hash = Get-FileHash -Algorithm SHA256 $installer
+    $hashLine = "{0}  {1}" -f $hash.Hash.ToLowerInvariant(), (Split-Path -Leaf $installer)
+    Set-Content -Path "$installer.sha256" -Value $hashLine -Encoding ascii
+}

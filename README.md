@@ -59,10 +59,10 @@ Read more in [PRIVACY.md](PRIVACY.md).
 
 ## Installation
 
-Download the latest installer from the GitHub Releases page:
+Download the latest installer from the [GitHub Releases page](https://github.com/miladateight/KeyFix/releases/latest):
 
 ```text
-KeyFixSetup-0.2.0.exe
+KeyFixSetup-0.3.0.exe
 ```
 
 After installing:

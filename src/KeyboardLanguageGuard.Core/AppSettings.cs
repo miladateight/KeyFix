@@ -2,11 +2,15 @@ namespace KeyboardLanguageGuard.Core;
 
 public sealed class AppSettings
 {
-    public DetectionMode Mode { get; set; } = DetectionMode.AlertOnly;
+    public const int CurrentSettingsVersion = 3;
+
+    public int SettingsVersion { get; set; } = CurrentSettingsVersion;
+
+    public DetectionMode Mode { get; set; } = DetectionMode.AutoSwitch;
 
     public int DetectionThreshold { get; set; } = 8;
 
-    public int MinimumCharacters { get; set; } = 5;
+    public int MinimumCharacters { get; set; } = 3;
 
     public bool PlaySound { get; set; } = true;
 
@@ -24,8 +28,8 @@ public sealed class AppSettings
     [
         new() { Language = LanguageKind.English, Enabled = true },
         new() { Language = LanguageKind.Persian, Enabled = true },
-        new() { Language = LanguageKind.Arabic, Enabled = true },
-        new() { Language = LanguageKind.German, Enabled = true }
+        new() { Language = LanguageKind.Arabic, Enabled = false },
+        new() { Language = LanguageKind.German, Enabled = false }
     ];
 
     public List<string> ExcludedProcesses { get; set; } =

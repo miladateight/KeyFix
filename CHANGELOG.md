@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0 - 2026-06-15
+
+- Improved automatic correction after Space.
+- Made `AutoSwitch` the default mode for new and migrated settings.
+- Lowered the default minimum detection length to catch more real words.
+- Defaulted new installs to English and Persian enabled, with Arabic and German available but disabled until selected.
+- Cleared the typing buffer when protection is paused or the foreground app is excluded.
+- Added foreground-window and input-version checks before replacing text.
+- Added keyboard-hook startup failure notification.
+- Added more tests for Persian, Arabic, and German layout detection.
+- Made GitHub Actions publish a self-contained Windows build.
+- Made installer packaging generate a SHA256 file for GitHub Releases.
+
 ## 0.2.0 - 2026-06-15
 
 - Renamed the app to KeyFix.

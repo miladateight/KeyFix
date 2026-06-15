@@ -62,7 +62,7 @@ Mehr dazu steht in [PRIVACY.md](PRIVACY.md).
 Lade den neuesten Installer von der GitHub-Releases-Seite herunter:
 
 ```text
-KeyFixSetup-0.2.0.exe
+KeyFixSetup-0.3.0.exe
 ```
 
 Nach der Installation:
