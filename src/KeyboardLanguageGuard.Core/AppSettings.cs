@@ -2,7 +2,7 @@ namespace KeyboardLanguageGuard.Core;
 
 public sealed class AppSettings
 {
-    public const int CurrentSettingsVersion = 3;
+    public const int CurrentSettingsVersion = 4;
 
     public int SettingsVersion { get; set; } = CurrentSettingsVersion;
 

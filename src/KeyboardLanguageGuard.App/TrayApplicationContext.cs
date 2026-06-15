@@ -69,6 +69,7 @@ public sealed class TrayApplicationContext : ApplicationContext
     private ContextMenuStrip BuildMenu()
     {
         ContextMenuStrip menu = new();
+        ToolStripMenuItem statusItem = new(GetStatusText()) { Enabled = false };
 
         ToolStripMenuItem pauseItem = new(_paused ? "Resume protection" : "Pause protection");
         pauseItem.Click += (_, _) =>
@@ -87,6 +88,8 @@ public sealed class TrayApplicationContext : ApplicationContext
         ToolStripMenuItem exitItem = new("Exit");
         exitItem.Click += (_, _) => ExitThread();
 
+        menu.Items.Add(statusItem);
+        menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(pauseItem);
         menu.Items.Add(settingsItem);
         menu.Items.Add(testAlertItem);
@@ -94,6 +97,24 @@ public sealed class TrayApplicationContext : ApplicationContext
         menu.Items.Add(exitItem);
 
         return menu;
+    }
+
+    private string GetStatusText()
+    {
+        string languages = string.Join(", ", _settings.Languages
+            .Where(item => item.Enabled)
+            .Select(item => item.Language.ToString()));
+
+        if (string.IsNullOrWhiteSpace(languages))
+        {
+            languages = "no languages";
+        }
+
+        string mode = _settings.Mode == DetectionMode.AutoSwitch && _settings.AutoCorrectTypedText
+            ? "Auto-correct after Space"
+            : _settings.Mode.ToString();
+
+        return $"Status: {mode} | {languages}";
     }
 
     private void ShowSettings()

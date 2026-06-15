@@ -33,8 +33,12 @@ public sealed class SettingsStore
 
             string json = File.ReadAllText(path);
             AppSettings settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
-            Normalize(settings);
+            bool changed = Normalize(settings);
             if (!File.Exists(SettingsPath) && File.Exists(path))
+            {
+                Save(settings);
+            }
+            else if (changed)
             {
                 Save(settings);
             }
@@ -54,47 +58,59 @@ public sealed class SettingsStore
         File.WriteAllText(SettingsPath, json);
     }
 
-    private static void Normalize(AppSettings settings)
+    private static bool Normalize(AppSettings settings)
     {
+        bool changed = false;
         int previousVersion = settings.SettingsVersion;
-        EnsureLanguage(settings, LanguageKind.English, enabledByDefault: true);
-        EnsureLanguage(settings, LanguageKind.Persian, enabledByDefault: true);
-        EnsureLanguage(settings, LanguageKind.Arabic, enabledByDefault: false);
-        EnsureLanguage(settings, LanguageKind.German, enabledByDefault: false);
+        changed |= EnsureLanguage(settings, LanguageKind.English, enabledByDefault: true);
+        changed |= EnsureLanguage(settings, LanguageKind.Persian, enabledByDefault: true);
+        changed |= EnsureLanguage(settings, LanguageKind.Arabic, enabledByDefault: false);
+        changed |= EnsureLanguage(settings, LanguageKind.German, enabledByDefault: false);
 
         if (previousVersion < AppSettings.CurrentSettingsVersion)
         {
             settings.Mode = DetectionMode.AutoSwitch;
             settings.AutoCorrectTypedText = true;
             settings.MinimumCharacters = Math.Min(settings.MinimumCharacters, 3);
+            changed = true;
 
             bool allLanguagesEnabled = settings.Languages.All(item => item.Enabled);
             if (allLanguagesEnabled)
             {
-                SetLanguage(settings, LanguageKind.Arabic, enabled: false);
-                SetLanguage(settings, LanguageKind.German, enabled: false);
+                changed |= SetLanguage(settings, LanguageKind.Arabic, enabled: false);
+                changed |= SetLanguage(settings, LanguageKind.German, enabled: false);
             }
         }
 
-        settings.SettingsVersion = AppSettings.CurrentSettingsVersion;
+        if (settings.SettingsVersion != AppSettings.CurrentSettingsVersion)
+        {
+            settings.SettingsVersion = AppSettings.CurrentSettingsVersion;
+            changed = true;
+        }
+
+        return changed;
     }
 
-    private static void EnsureLanguage(AppSettings settings, LanguageKind language, bool enabledByDefault)
+    private static bool EnsureLanguage(AppSettings settings, LanguageKind language, bool enabledByDefault)
     {
         if (settings.Languages.Any(item => item.Language == language))
         {
-            return;
+            return false;
         }
 
         settings.Languages.Add(new LanguageProfile { Language = language, Enabled = enabledByDefault });
+        return true;
     }
 
-    private static void SetLanguage(AppSettings settings, LanguageKind language, bool enabled)
+    private static bool SetLanguage(AppSettings settings, LanguageKind language, bool enabled)
     {
         LanguageProfile? profile = settings.Languages.FirstOrDefault(item => item.Language == language);
-        if (profile is not null)
+        if (profile is null || profile.Enabled == enabled)
         {
-            profile.Enabled = enabled;
+            return false;
         }
+
+        profile.Enabled = enabled;
+        return true;
     }
 }

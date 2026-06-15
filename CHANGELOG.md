@@ -4,6 +4,8 @@
 
 - Improved automatic correction after Space.
 - Made `AutoSwitch` the default mode for new and migrated settings.
+- Persisted migrated settings so older installs do not stay in alert-only mode.
+- Added tray status text showing the active mode and enabled languages.
 - Lowered the default minimum detection length to catch more real words.
 - Defaulted new installs to English and Persian enabled, with Arabic and German available but disabled until selected.
 - Cleared the typing buffer when protection is paused or the foreground app is excluded.

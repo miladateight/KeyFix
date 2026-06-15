@@ -46,6 +46,7 @@ public sealed class LanguageDetector
         {
             string transformed = KeyboardLayoutMaps.Transform(normalized, currentLanguage, profile.Language);
             int candidateScore = Score(profile.Language, transformed);
+            candidateScore += ScoreLayoutMismatch(currentLanguage, profile.Language, normalized, transformed);
             int difference = candidateScore - currentScore;
 
             if (difference < settings.DetectionThreshold || difference <= best.ScoreDifference)
@@ -135,6 +136,24 @@ public sealed class LanguageDetector
         }
 
         return score;
+    }
+
+    private static int ScoreLayoutMismatch(
+        LanguageKind currentLanguage,
+        LanguageKind candidateLanguage,
+        string observedText,
+        string transformedText)
+    {
+        if (currentLanguage is LanguageKind.Persian or LanguageKind.Arabic &&
+            candidateLanguage is LanguageKind.English or LanguageKind.German &&
+            observedText.Any(IsArabicBlock) &&
+            transformedText.Length >= 4 &&
+            transformedText.All(IsBasicLatin))
+        {
+            return 10;
+        }
+
+        return 0;
     }
 
     private static IReadOnlyList<string> Hints(LanguageKind language)
