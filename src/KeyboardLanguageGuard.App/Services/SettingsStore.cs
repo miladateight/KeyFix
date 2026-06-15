@@ -72,6 +72,7 @@ public sealed class SettingsStore
             settings.Mode = DetectionMode.AutoSwitch;
             settings.AutoCorrectTypedText = true;
             settings.MinimumCharacters = Math.Min(settings.MinimumCharacters, 3);
+            settings.FirstRunCompleted = false;
             changed = true;
 
             bool allLanguagesEnabled = settings.Languages.All(item => item.Enabled);

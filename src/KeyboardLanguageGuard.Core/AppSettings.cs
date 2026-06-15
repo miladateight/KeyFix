@@ -2,9 +2,11 @@ namespace KeyboardLanguageGuard.Core;
 
 public sealed class AppSettings
 {
-    public const int CurrentSettingsVersion = 4;
+    public const int CurrentSettingsVersion = 5;
 
     public int SettingsVersion { get; set; } = CurrentSettingsVersion;
+
+    public bool FirstRunCompleted { get; set; }
 
     public DetectionMode Mode { get; set; } = DetectionMode.AutoSwitch;
 

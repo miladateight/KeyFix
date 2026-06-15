@@ -62,7 +62,7 @@ Read more in [PRIVACY.md](PRIVACY.md).
 Download the latest installer from the [GitHub Releases page](https://github.com/miladateight/KeyFix/releases/latest):
 
 ```text
-KeyFixSetup-0.3.0.exe
+KeyFixSetup-0.3.1.exe
 ```
 
 After installing:

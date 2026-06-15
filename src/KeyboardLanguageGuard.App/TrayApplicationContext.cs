@@ -45,6 +45,14 @@ public sealed class TrayApplicationContext : ApplicationContext
         _hookService.CharacterTyped += OnCharacterTyped;
         _hookService.BackspacePressed += OnBackspacePressed;
         _hookService.BreakKeyPressed += OnBreakKeyPressed;
+
+        if (!_settings.FirstRunCompleted && !ShowFirstRunSetup())
+        {
+            _notifyIcon.Visible = false;
+            ExitThread();
+            return;
+        }
+
         if (!_hookService.Start())
         {
             _paused = true;
@@ -64,6 +72,22 @@ public sealed class TrayApplicationContext : ApplicationContext
         }
 
         base.Dispose(disposing);
+    }
+
+    private bool ShowFirstRunSetup()
+    {
+        using SettingsForm form = new(_settings, isFirstRun: true);
+        if (form.ShowDialog() != DialogResult.OK)
+        {
+            return false;
+        }
+
+        _settings = form.Settings;
+        _settingsStore.Save(_settings);
+        _startupService.SetEnabled(_settings.LaunchAtStartup);
+        _buffer.Clear();
+        _notifyIcon.ContextMenuStrip = BuildMenu();
+        return true;
     }
 
     private ContextMenuStrip BuildMenu()

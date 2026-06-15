@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 - 2026-06-15
+
+- Added a first-run setup wizard before keyboard protection starts.
+- The first-run wizard asks users to choose only the keyboard languages they actually use.
+- The wizard shows the main KeyFix settings on first launch so users can review mode, auto-correction, startup, sound, notifications, and excluded apps.
+- Improved uninstall cleanup for KeyFix settings, legacy settings, startup registry value, and leftover app data folders.
+- Updated packaging to generate SHA256 for the newest generated installer automatically.
+
 ## 0.3.0 - 2026-06-15
 
 - Improved automatic correction after Space.

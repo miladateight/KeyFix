@@ -1,5 +1,5 @@
 #define MyAppName "KeyFix"
-#define MyAppVersion "0.3.0"
+#define MyAppVersion "0.3.1"
 #define MyAppPublisher "Milad AT8"
 #define MyAppURL "https://github.com/miladateight/KeyFix"
 #define MyAppExeName "KeyFix.exe"
@@ -33,6 +33,8 @@ VersionInfoCopyright=Copyright (c) 2026 {#MyAppPublisher}. Special thanks to Ash
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+CloseApplications=yes
+CloseApplicationsFilter={#MyAppExeName}
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -52,3 +54,14 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
+[UninstallRun]
+Filename: "{cmd}"; Parameters: "/C taskkill /IM {#MyAppExeName} /F >NUL 2>NUL & exit /B 0"; Flags: runhidden waituntilterminated; RunOnceId: "StopKeyFix"
+Filename: "{cmd}"; Parameters: "/C reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v KeyFix /f >NUL 2>NUL & exit /B 0"; Flags: runhidden waituntilterminated; RunOnceId: "RemoveKeyFixStartup"
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{userappdata}\KeyFix"
+Type: filesandordirs; Name: "{userappdata}\KeyboardLanguageGuard"
+Type: filesandordirs; Name: "{localappdata}\KeyFix"
+Type: filesandordirs; Name: "{commonappdata}\KeyFix"
+Type: dirifempty; Name: "{app}"

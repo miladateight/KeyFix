@@ -19,16 +19,18 @@ public sealed class SettingsForm : Form
     private readonly CheckBox _launchAtStartup = new() { Text = "Start KeyFix when Windows starts", AutoSize = true };
     private readonly TextBox _soundPath = new() { Width = 390 };
     private readonly TextBox _excludedProcesses = new() { Multiline = true, ScrollBars = ScrollBars.Vertical, Height = 90, Width = 480 };
+    private readonly bool _isFirstRun;
 
-    public SettingsForm(AppSettings settings)
+    public SettingsForm(AppSettings settings, bool isFirstRun = false)
     {
+        _isFirstRun = isFirstRun;
         Settings = Clone(settings);
-        Text = "KeyFix Settings";
+        Text = isFirstRun ? "KeyFix First-Run Setup" : "KeyFix Settings";
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        ClientSize = new Size(590, 585);
+        ClientSize = new Size(590, 625);
         Font = new Font("Segoe UI", 9F);
 
         _mode.Items.AddRange(Enum.GetNames<DetectionMode>());
@@ -46,20 +48,30 @@ public sealed class SettingsForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(18),
             ColumnCount = 1,
-            RowCount = 11
+            RowCount = 12
         };
 
         root.RowStyles.Clear();
-        for (int index = 0; index < 10; index++)
+        for (int index = 0; index < 12; index++)
         {
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         }
+
+        Label intro = new()
+        {
+            AutoSize = true,
+            MaximumSize = new Size(535, 0),
+            Text = _isFirstRun
+                ? "Choose only the keyboard languages you actually use, then review the rest of the settings before KeyFix starts."
+                : "Choose only the keyboard languages you actually use. Disable unused languages for better accuracy."
+        };
 
         GroupBox languages = new() { Text = "Enabled languages", Width = 510, Height = 70 };
         FlowLayoutPanel languagePanel = new() { Dock = DockStyle.Fill, Padding = new Padding(10) };
         languagePanel.Controls.AddRange([_english, _persian, _arabic, _german]);
         languages.Controls.Add(languagePanel);
 
+        root.Controls.Add(intro);
         root.Controls.Add(languages);
         root.Controls.Add(Field("Mode", _mode));
         root.Controls.Add(Field("Detection threshold", _threshold));
@@ -119,8 +131,8 @@ public sealed class SettingsForm : Form
             Padding = new Padding(0, 18, 0, 0)
         };
 
-        Button save = new() { Text = "Save", DialogResult = DialogResult.OK, Width = 90 };
-        Button cancel = new() { Text = "Cancel", DialogResult = DialogResult.Cancel, Width = 90 };
+        Button save = new() { Text = _isFirstRun ? "Start KeyFix" : "Save", DialogResult = DialogResult.None, Width = 110 };
+        Button cancel = new() { Text = _isFirstRun ? "Exit" : "Cancel", DialogResult = DialogResult.Cancel, Width = 90 };
         save.Click += (_, _) => SaveSettings();
         panel.Controls.Add(save);
         panel.Controls.Add(cancel);
@@ -148,7 +160,19 @@ public sealed class SettingsForm : Form
 
     private void SaveSettings()
     {
+        if (!_english.Checked && !_persian.Checked && !_arabic.Checked && !_german.Checked)
+        {
+            MessageBox.Show(
+                this,
+                "Enable at least one keyboard language before starting KeyFix.",
+                "KeyFix",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            return;
+        }
+
         Settings.SettingsVersion = AppSettings.CurrentSettingsVersion;
+        Settings.FirstRunCompleted = true;
         Settings.Mode = Enum.Parse<DetectionMode>(_mode.SelectedItem?.ToString() ?? nameof(DetectionMode.AutoSwitch));
         Settings.DetectionThreshold = (int)_threshold.Value;
         Settings.MinimumCharacters = (int)_minimumCharacters.Value;
@@ -169,6 +193,9 @@ public sealed class SettingsForm : Form
             new() { Language = LanguageKind.Arabic, Enabled = _arabic.Checked },
             new() { Language = LanguageKind.German, Enabled = _german.Checked }
         ];
+
+        DialogResult = DialogResult.OK;
+        Close();
     }
 
     private static AppSettings Clone(AppSettings settings)
@@ -177,6 +204,7 @@ public sealed class SettingsForm : Form
         {
             Mode = settings.Mode,
             SettingsVersion = settings.SettingsVersion,
+            FirstRunCompleted = settings.FirstRunCompleted,
             DetectionThreshold = settings.DetectionThreshold,
             MinimumCharacters = settings.MinimumCharacters,
             PlaySound = settings.PlaySound,
