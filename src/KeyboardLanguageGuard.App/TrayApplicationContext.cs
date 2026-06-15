@@ -252,11 +252,8 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         if (_settings.Mode == DetectionMode.AutoSwitch)
         {
-            bool fixedText = ApplyAutoFix(result, request.TrailingWhitespace);
-            if (fixedText)
-            {
-                _buffer.Clear();
-            }
+            ApplyAutoFix(result, request.TrailingWhitespace);
+            _buffer.Clear();
         }
 
         if (canNotify && _settings.ShowNotification)
@@ -291,10 +288,7 @@ public sealed class TrayApplicationContext : ApplicationContext
             fixedText = _textCorrectionService.ReplaceTextBeforeCursor(charactersToReplace, textToInsert);
         }
 
-        if (fixedText)
-        {
-            _layoutService.SwitchTo(result.SuggestedLanguage);
-        }
+        _layoutService.SwitchTo(result.SuggestedLanguage);
 
         return fixedText;
     }

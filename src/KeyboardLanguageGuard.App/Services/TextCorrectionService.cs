@@ -19,13 +19,9 @@ public sealed class TextCorrectionService
 
         try
         {
-            if (!SendRepeatedKey(VkBack, charactersToReplace))
-            {
-                return false;
-            }
-
-            Thread.Sleep(20);
-            return SendUnicodeText(replacement) || PasteText(replacement);
+            bool removedText = SendRepeatedKey(VkBack, charactersToReplace);
+            Thread.Sleep(35);
+            return removedText && (PasteText(replacement) || SendUnicodeText(replacement));
         }
         catch
         {
@@ -35,15 +31,23 @@ public sealed class TextCorrectionService
 
     private static bool SendRepeatedKey(ushort virtualKey, int count)
     {
-        Input[] inputs = new Input[count * 2];
         for (int index = 0; index < count; index++)
         {
-            int offset = index * 2;
-            inputs[offset] = KeyboardInput(virtualKey, 0, 0);
-            inputs[offset + 1] = KeyboardInput(virtualKey, 0, KeyEventKeyUp);
+            Input[] inputs =
+            [
+                KeyboardInput(virtualKey, 0, 0),
+                KeyboardInput(virtualKey, 0, KeyEventKeyUp)
+            ];
+
+            if (SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>()) != inputs.Length)
+            {
+                return false;
+            }
+
+            Thread.Sleep(6);
         }
 
-        return SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>()) == inputs.Length;
+        return true;
     }
 
     private static bool SendUnicodeText(string text)
@@ -67,15 +71,15 @@ public sealed class TextCorrectionService
         {
             previousClipboard = Clipboard.GetDataObject();
             Clipboard.SetText(text, TextDataFormat.UnicodeText);
-            SendChord(0x11, 0x56);
-            Thread.Sleep(120);
+            bool pasted = SendChord(0x11, 0x56);
+            Thread.Sleep(180);
 
             if (previousClipboard is not null)
             {
                 Clipboard.SetDataObject(previousClipboard, true);
             }
 
-            return true;
+            return pasted;
         }
         catch
         {
@@ -95,7 +99,7 @@ public sealed class TextCorrectionService
         }
     }
 
-    private static void SendChord(ushort modifier, ushort key)
+    private static bool SendChord(ushort modifier, ushort key)
     {
         Input[] inputs =
         [
@@ -105,7 +109,7 @@ public sealed class TextCorrectionService
             KeyboardInput(modifier, 0, KeyEventKeyUp)
         ];
 
-        SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>());
+        return SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>()) == inputs.Length;
     }
 
     private static Input KeyboardInput(ushort virtualKey, ushort scanCode, uint flags)

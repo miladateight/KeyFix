@@ -19,6 +19,8 @@ KeyFix 0.3.1 improves the first-launch experience and uninstall cleanup.
   - removes the Windows startup registry value
   - removes leftover KeyFix app data folders
 - Packaging now generates a SHA256 file for the newest installer automatically.
+- Fixed automatic switching so KeyFix still changes to the detected target language even if text replacement fails in the focused app.
+- Made clipboard paste the primary replacement method for better compatibility with common Windows apps.
 
 ## After Installing
 
