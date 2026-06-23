@@ -1,0 +1,56 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build
+        run: dotnet build KeyboardLanguageGuard.sln --configuration Release
+
+      - name: Run tests
+        run: dotnet run --project tests/KeyboardLanguageGuard.Tests/KeyboardLanguageGuard.Tests.csproj --configuration Release
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress --yes
+
+      - name: Package installer
+        run: powershell -ExecutionPolicy Bypass -File scripts/package-installer.ps1
+
+      - name: Collect release notes
+        id: notes
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag.TrimStart("v")
+          $notesFile = "RELEASE_NOTES_v$version.md"
+          if (Test-Path $notesFile) {
+            "notes_file=$notesFile" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          } else {
+            "notes_file=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          }
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: KeyFix ${{ github.ref_name }}
+          body_path: ${{ steps.notes.outputs.notes_file }}
+          files: |
+            artifacts/installer/KeyFixSetup-*.exe
+            artifacts/installer/KeyFixSetup-*.exe.sha256

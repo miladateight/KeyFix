@@ -62,7 +62,7 @@ Languages: [English](README.md) | [فارسی](README.fa.md) | [العربية](
 حمّل أحدث ملف تثبيت من صفحة Releases في GitHub:
 
 ```text
-KeyFixSetup-0.3.1.exe
+KeyFixSetup-0.4.0.exe
 ```
 
 بعد التثبيت:

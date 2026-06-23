@@ -2,5 +2,12 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\words-fa.txt" />
+    <EmbeddedResource Include="Resources\words-en.txt" />
+    <EmbeddedResource Include="Resources\words-de.txt" />
+    <EmbeddedResource Include="Resources\words-ar.txt" />
+  </ItemGroup>
 </Project>
 

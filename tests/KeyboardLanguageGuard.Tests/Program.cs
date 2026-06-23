@@ -66,6 +66,40 @@ Assert(!mixedAccidentalCharacter.ShouldAlert, "Detector does not auto-correct mi
 DetectionResult normalEnglish = detector.Detect("hello and thanks", LanguageKind.English, settings);
 Assert(!normalEnglish.ShouldAlert, "Detector does not alert for normal English text.");
 
+// Common Persian words typed under the English layout should now be recognised.
+DetectionResult misalaResult = detector.Detect("legh", LanguageKind.English, settings);
+Assert(misalaResult.ShouldAlert && misalaResult.TextToInsert == "مثلا",
+    "Detector catches 'legh' as the Persian word مثلا.");
+
+DetectionResult hanuzResult = detector.Detect("ik,c", LanguageKind.English, settings);
+Assert(hanuzResult.ShouldAlert && hanuzResult.TextToInsert == "هنوز",
+    "Detector catches 'ik,c' as the Persian word هنوز.");
+
+DetectionResult mibinamResult = detector.Detect("ldfdkd", LanguageKind.English, settings);
+Assert(mibinamResult.ShouldAlert && mibinamResult.TextToInsert == "میبینی",
+    "Detector catches 'ldfdkd' as the Persian word میبینی.");
+
+DetectionResult behtarinResult = detector.Detect("fijvdk", LanguageKind.English, settings);
+Assert(behtarinResult.ShouldAlert && behtarinResult.TextToInsert == "بهترین",
+    "Detector catches 'fijvdk' as the Persian word بهترین via the dictionary.");
+
+// A real English word typed while English is active must never be rewritten.
+DetectionResult realEnglishWord = detector.Detect("man", LanguageKind.English, settings);
+Assert(!realEnglishWord.ShouldAlert, "Detector does not rewrite the real English word 'man'.");
+
+Assert(WordDictionary.Count(LanguageKind.Persian) > 4000 && WordDictionary.Count(LanguageKind.English) > 4000,
+    "Word dictionaries are loaded with several thousand words.");
+
+// Three-letter words are now in scope (English typed under the Persian layout).
+DetectionResult howResult = detector.Detect("اخص", LanguageKind.Persian, settings);
+Assert(howResult.ShouldAlert && howResult.TextToInsert == "how", "Detector catches 'اخص' as the English word how.");
+
+DetectionResult youResult = detector.Detect("غخع", LanguageKind.Persian, settings);
+Assert(youResult.ShouldAlert && youResult.TextToInsert == "you", "Detector catches 'غخع' as the English word you.");
+
+DetectionResult realThree = detector.Detect("the", LanguageKind.English, settings);
+Assert(!realThree.ShouldAlert, "Detector does not rewrite the real English word 'the'.");
+
 TextRingBuffer buffer = new();
 foreach (char item in "\u0627\u062b\u0645\u0645\u062e ")
 {

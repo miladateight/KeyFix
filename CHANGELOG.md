@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.0 - 2026-06-23
+
+- Fixed the core bug that prevented automatic correction from ever working: the `INPUT`
+  structure passed to `SendInput` had the wrong size on 64-bit Windows, so every key
+  injection failed with `ERROR_INVALID_PARAMETER`. The mistyped word (for example `اثممخ`)
+  is now actually rewritten to the intended text (`hello`), not only the language switched.
+- Replaced text using a single atomic `SendInput` batch (all backspaces and characters at
+  once), so the correction is instantaneous and no longer garbles text during fast typing.
+- Ran the correction on a dedicated background thread so the low-level keyboard hook stays
+  responsive and the injected keystrokes are reliably delivered.
+- Added embedded word dictionaries (~6000 most common words each for Persian, English,
+  German, and Arabic) and rewrote detection to use them, recognizing far more real words.
+- Detection no longer rewrites text that is already a valid word in the active language.
+- Lowered the minimum word length to three characters so short words are detected too.
+- Used direct Unicode typing as the primary replacement path (no clipboard side effects),
+  with clipboard paste kept as a fallback.
+
 ## 0.3.1 - 2026-06-15
 
 - Added a first-run setup wizard before keyboard protection starts.

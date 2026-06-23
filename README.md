@@ -21,6 +21,7 @@ Important: after installing KeyFix, open **Settings** and keep only the language
 - Alert-only, suggestion, and automatic switch modes
 - Automatic correction of the previous mistyped word in `AutoSwitch` mode
 - Correction happens after Space, not while the user is still typing a word
+- Dictionary-based detection using the most common words of each supported language
 - Optional launch at Windows startup
 - Built-in Windows alert sound
 - Optional custom `.wav` alert sound
@@ -62,7 +63,7 @@ Read more in [PRIVACY.md](PRIVACY.md).
 Download the latest installer from the [GitHub Releases page](https://github.com/miladateight/KeyFix/releases/latest):
 
 ```text
-KeyFixSetup-0.3.1.exe
+KeyFixSetup-0.4.0.exe
 ```
 
 After installing:

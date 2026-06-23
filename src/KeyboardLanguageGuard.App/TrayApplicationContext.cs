@@ -199,7 +199,10 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         _ = Task.Run(async () =>
         {
-            await Task.Delay(80).ConfigureAwait(false);
+            // Short settle so the typed word and its trailing space have reached the focused
+            // control before we correct, while staying small enough that quick typing of the
+            // next word does not cancel the correction (the input-version guard).
+            await Task.Delay(45).ConfigureAwait(false);
             _uiContext.Post(_ => ProcessCorrectionRequest(request), null);
         });
     }
@@ -252,14 +255,34 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         if (_settings.Mode == DetectionMode.AutoSwitch)
         {
-            ApplyAutoFix(result, request.TrailingWhitespace);
+            // Clear the buffer first so any later real typing starts clean, then run the
+            // text replacement on a dedicated background thread. The low-level keyboard
+            // hook lives on this UI thread; if we injected the backspaces/characters from
+            // here we would block the UI thread (Thread.Sleep) and Windows would drop the
+            // injected keystrokes because the hook can no longer be serviced. Running the
+            // replacement off the UI thread keeps the hook responsive so the synthetic keys
+            // are actually delivered.
             _buffer.Clear();
+            RunAutoFixOffUiThread(result, request.TrailingWhitespace);
         }
 
         if (canNotify && _settings.ShowNotification)
         {
             ShowDetectionNotification(result);
         }
+    }
+
+    private void RunAutoFixOffUiThread(DetectionResult result, string trailingWhitespace)
+    {
+        Thread worker = new(() => ApplyAutoFix(result, trailingWhitespace))
+        {
+            IsBackground = true,
+            Name = "KeyFixAutoCorrect"
+        };
+
+        // STA so the clipboard fallback in TextCorrectionService stays valid.
+        worker.SetApartmentState(ApartmentState.STA);
+        worker.Start();
     }
 
     private void ShowDetectionNotification(DetectionResult result)

@@ -19,9 +19,22 @@ public sealed class TextCorrectionService
 
         try
         {
-            bool removedText = SendRepeatedKey(VkBack, charactersToReplace);
-            Thread.Sleep(35);
-            return removedText && (PasteText(replacement) || SendUnicodeText(replacement));
+            // Build the whole correction (all backspaces + all replacement characters) as a
+            // single atomic SendInput batch. Sending it in one call makes the replacement
+            // effectively instantaneous, so it cannot interleave with the user's next real
+            // keystrokes when they type quickly. The events stay in order in the target's
+            // input queue: the backspaces delete the mistyped word, then the Unicode
+            // characters insert the corrected text.
+            Input[] inputs = BuildReplacementInputs(charactersToReplace, replacement);
+            uint sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>());
+
+            if (sent == inputs.Length)
+            {
+                return true;
+            }
+
+            // Injection was rejected by the target app: fall back to clipboard paste.
+            return PasteText(replacement);
         }
         catch
         {
@@ -29,39 +42,25 @@ public sealed class TextCorrectionService
         }
     }
 
-    private static bool SendRepeatedKey(ushort virtualKey, int count)
+    private static Input[] BuildReplacementInputs(int backspaceCount, string replacement)
     {
-        for (int index = 0; index < count; index++)
+        Input[] inputs = new Input[(backspaceCount * 2) + (replacement.Length * 2)];
+        int offset = 0;
+
+        for (int index = 0; index < backspaceCount; index++)
         {
-            Input[] inputs =
-            [
-                KeyboardInput(virtualKey, 0, 0),
-                KeyboardInput(virtualKey, 0, KeyEventKeyUp)
-            ];
-
-            if (SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>()) != inputs.Length)
-            {
-                return false;
-            }
-
-            Thread.Sleep(6);
+            inputs[offset++] = KeyboardInput(VkBack, 0, 0);
+            inputs[offset++] = KeyboardInput(VkBack, 0, KeyEventKeyUp);
         }
 
-        return true;
-    }
-
-    private static bool SendUnicodeText(string text)
-    {
-        Input[] inputs = new Input[text.Length * 2];
-        for (int index = 0; index < text.Length; index++)
+        foreach (char character in replacement)
         {
-            int offset = index * 2;
-            ushort scanCode = unchecked((ushort)text[index]);
-            inputs[offset] = KeyboardInput(0, scanCode, KeyEventUnicode);
-            inputs[offset + 1] = KeyboardInput(0, scanCode, KeyEventUnicode | KeyEventKeyUp);
+            ushort scanCode = unchecked((ushort)character);
+            inputs[offset++] = KeyboardInput(0, scanCode, KeyEventUnicode);
+            inputs[offset++] = KeyboardInput(0, scanCode, KeyEventUnicode | KeyEventKeyUp);
         }
 
-        return SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>()) == inputs.Length;
+        return inputs;
     }
 
     private static bool PasteText(string text)
@@ -72,7 +71,11 @@ public sealed class TextCorrectionService
             previousClipboard = Clipboard.GetDataObject();
             Clipboard.SetText(text, TextDataFormat.UnicodeText);
             bool pasted = SendChord(0x11, 0x56);
-            Thread.Sleep(180);
+
+            // Wait long enough for the target app to actually consume Ctrl+V before
+            // restoring the previous clipboard, otherwise the paste can race against the
+            // restore and insert stale clipboard contents.
+            Thread.Sleep(320);
 
             if (previousClipboard is not null)
             {
@@ -146,6 +149,13 @@ public sealed class TextCorrectionService
     {
         [FieldOffset(0)]
         public KeyboardInputData Keyboard;
+
+        // The native INPUT union must be the size of its largest member (MOUSEINPUT).
+        // Including it keeps Marshal.SizeOf<Input>() equal to the real sizeof(INPUT)
+        // (40 bytes on x64), so the cbSize passed to SendInput is correct. Without this
+        // the struct is too small and SendInput fails with ERROR_INVALID_PARAMETER (87).
+        [FieldOffset(0)]
+        public MouseInputData Mouse;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -153,6 +163,17 @@ public sealed class TextCorrectionService
     {
         public ushort VirtualKey;
         public ushort ScanCode;
+        public uint Flags;
+        public uint Time;
+        public IntPtr ExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MouseInputData
+    {
+        public int X;
+        public int Y;
+        public uint MouseData;
         public uint Flags;
         public uint Time;
         public IntPtr ExtraInfo;
