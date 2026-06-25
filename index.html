@@ -538,12 +538,24 @@
 
       .footer {
         display: flex;
+        flex-wrap: wrap;
         justify-content: space-between;
         gap: 16px;
         padding: 24px clamp(20px, 5vw, 82px) 42px;
         border-top: 1px solid var(--line);
         color: var(--muted);
         background: rgba(5, 8, 22, 0.99);
+      }
+
+      .footer-projects {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .footer-projects a:hover {
+        color: var(--text);
       }
 
       .rtl .hero > div:first-child,
@@ -929,6 +941,11 @@
 
       <footer class="footer">
         <span data-i18n="footerLeft">KeyFix by Milad Ateight</span>
+        <nav class="footer-projects" aria-label="Other AT8 projects">
+          <a href="https://ateight.xyz/NetDoctor/" data-i18n="projNetDoctor">NetDoctor</a>
+          <a href="https://ateight.xyz/hybrid-web-mail-infrastructure/" data-i18n="projHwmi">Hybrid Web &amp; Mail</a>
+          <a href="https://ateight.xyz/instagram-youtube-soundcloud-downloader/" data-i18n="projDownloader">Telegram Downloader</a>
+        </nav>
         <span data-i18n="footerRight">Project page: ateight.xyz/KeyFix</span>
       </footer>
     </main>
@@ -1002,7 +1019,11 @@
           metricInstaller: "Installer",
           downloadNote: "Local-only detection: no uploaded text, no telemetry, no remote server.",
           footerLeft: "KeyFix by Milad Ateight",
-          footerRight: "Project page: ateight.xyz/KeyFix"
+          footerRight: "Project page: ateight.xyz/KeyFix",
+          projNetDoctor: "NetDoctor",
+          projKeyFix: "KeyFix",
+          projHwmi: "Hybrid Web & Mail",
+          projDownloader: "Telegram Downloader"
         },
         fa: {
           dir: "rtl",
@@ -1072,7 +1093,11 @@
           metricInstaller: "نصب کننده",
           downloadNote: "تشخیص کاملاً محلی: بدون آپلود متن، بدون telemetry، بدون سرور خارجی.",
           footerLeft: "KeyFix ساخته میلاد Ateight",
-          footerRight: "صفحه پروژه: ateight.xyz/KeyFix"
+          footerRight: "صفحه پروژه: ateight.xyz/KeyFix",
+          projNetDoctor: "نت‌دکتر",
+          projKeyFix: "کی‌فیکس",
+          projHwmi: "وب و ایمیل ترکیبی",
+          projDownloader: "دانلودر تلگرام"
         },
         ar: {
           dir: "rtl",
@@ -1142,7 +1167,11 @@
           metricInstaller: "المثبت",
           downloadNote: "كشف محلي فقط: لا رفع للنص، لا telemetry، ولا خادم بعيد.",
           footerLeft: "KeyFix بواسطة Milad Ateight",
-          footerRight: "صفحة المشروع: ateight.xyz/KeyFix"
+          footerRight: "صفحة المشروع: ateight.xyz/KeyFix",
+          projNetDoctor: "نت دكتور",
+          projKeyFix: "كي فيكس",
+          projHwmi: "البنية الهجينة للويب والبريد",
+          projDownloader: "بوت تيليجرام للتحميل"
         },
         de: {
           dir: "ltr",
@@ -1161,7 +1190,7 @@
           downloadButton: "Download v0.4.0",
           releaseButton: "Release Notes",
           homeButton: "AT8 Home",
-          deviceStatus: "status: ?berwacht",
+          deviceStatus: "status: überwacht",
           deviceAdapter: "Tipp-Puffer",
           deviceAdapterLine: "Englisch / Persisch / Arabisch / Deutsch",
           deviceConnectivity: "Erkennungsmodus",
@@ -1171,22 +1200,22 @@
           chipDns: "Layout-Erkennung",
           chipLoss: "Falsches Layout",
           chipProxy: "Auto-Korrektur",
-          chipUndo: "Lokale Privatsph?re",
-          featuresKicker: "Was gesch?tzt wird",
-          featuresTitle: "Datenschutzfreundliche Korrektur fuer falsche Tastaturlayouts.",
-          featuresLead: "KeyFix pr?ft das vorherige Wort mit lokalen W?rterb?chern und korrigiert typische Layout-Fehler, ohne getippten Text zu speichern oder hochzuladen.",
+          chipUndo: "Lokale Privatsphäre",
+          featuresKicker: "Was geschützt wird",
+          featuresTitle: "Datenschutzfreundliche Korrektur für falsche Tastaturlayouts.",
+          featuresLead: "KeyFix prüft das vorherige Wort mit lokalen Wörterbüchern und korrigiert typische Layout-Fehler, ohne getippten Text zu speichern oder hochzuladen.",
           feature1Title: "Lokaler Tipp-Puffer",
-          feature1Body: "H?lt nur einen kurzen Puffer im Speicher und l?scht ihn nach Korrektur, Enter, Tab, nicht unterst?tzten Layouts oder ausgeschlossenen Apps.",
-          feature2Title: "W?rterbuch-Erkennung",
-          feature2Body: "Nutzt h?ufige W?rter f?r Englisch, Persisch, Arabisch und Deutsch, um zu entscheiden, ob ein anderes Layout wahrscheinlicher ist.",
+          feature1Body: "Hält nur einen kurzen Puffer im Speicher und löscht ihn nach Korrektur, Enter, Tab, nicht unterstützten Layouts oder ausgeschlossenen Apps.",
+          feature2Title: "Wörterbuch-Erkennung",
+          feature2Body: "Nutzt häufige Wörter für Englisch, Persisch, Arabisch und Deutsch, um zu entscheiden, ob ein anderes Layout wahrscheinlicher ist.",
           feature3Title: "Warnen, vorschlagen oder korrigieren",
           feature3Body: "Kann einen Ton abspielen, eine Tray-Benachrichtigung zeigen, die Eingabesprache wechseln oder das vorherige falsch getippte Wort ersetzen.",
           feature4Title: "Kontrolle pro Sprache",
-          feature4Body: "Nutzer aktivieren nur die Sprachen, die sie wirklich verwenden. Das verbessert die Erkennung und reduziert unn?tige Korrekturen.",
+          feature4Body: "Nutzer aktivieren nur die Sprachen, die sie wirklich verwenden. Das verbessert die Erkennung und reduziert unnötige Korrekturen.",
           feature5Title: "Sicherere Korrektur",
-          feature5Body: "Schreibt keine W?rter um, die bereits in der aktiven Sprache g?ltig sind, und behandelt kurze W?rter vorsichtiger.",
+          feature5Body: "Schreibt keine Wörter um, die bereits in der aktiven Sprache gültig sind, und behandelt kurze Wörter vorsichtiger.",
           feature6Title: "Windows-Installer",
-          feature6Body: "Das Release wird als Windows-Setup ausgeliefert, damit Nutzer die App ohne Build aus dem Quellcode installieren k?nnen.",
+          feature6Body: "Das Release wird als Windows-Setup ausgeliefert, damit Nutzer die App ohne Build aus dem Quellcode installieren können.",
           flowKicker: "Ablauf",
           flowTitle: "Nach Space erkennen, dann korrigieren.",
           step1: "Schritt 1",
@@ -1194,15 +1223,15 @@
           flow1Body: "KeyFix bleibt im Tray und wartet, bis ein Wort mit Space abgeschlossen ist, bevor es entscheidet.",
           step2: "Schritt 2",
           flow2Title: "Wort lokal bewerten",
-          flow2Body: "Die App vergleicht das beobachtete Wort mit aktivierten Woerterbuechern und Tastaturlayout-Zuordnungen.",
+          flow2Body: "Die App vergleicht das beobachtete Wort mit aktivierten Wörterbüchern und Tastaturlayout-Zuordnungen.",
           step3: "Schritt 3",
-          flow3Title: "Aktion w?hlen",
-          flow3Body: "Je nach Einstellung warnt KeyFix, schl?gt vor, wechselt die Sprache oder korrigiert das falsch getippte Wort automatisch.",
+          flow3Title: "Aktion wählen",
+          flow3Body: "Je nach Einstellung warnt KeyFix, schlägt vor, wechselt die Sprache oder korrigiert das falsch getippte Wort automatisch.",
           step4: "Schritt 4",
           flow4Title: "Privat bleiben",
           flow4Body: "Getippter Text wird nicht gespeichert, nicht hochgeladen, und es gibt keine Telemetrie oder Remote-Server.",
           downloadKicker: "Download",
-          downloadLead: "Aktuelle ?ffentliche Vorabversion f?r Windows. Lade den Installer aus GitHub Releases herunter, pr?fe bei Bedarf die Pr?fsumme und aktiviere nach der Installation nur die Sprachen, die du wirklich nutzt.",
+          downloadLead: "Aktuelle öffentliche Vorabversion für Windows. Lade den Installer aus GitHub Releases herunter, prüfe bei Bedarf die Prüfsumme und aktiviere nach der Installation nur die Sprachen, die du wirklich nutzt.",
           installerButton: "Installer herunterladen",
           sourceButton: "Quellcode",
           metricVersion: "Version",
@@ -1212,7 +1241,11 @@
           metricInstaller: "Installer",
           downloadNote: "Nur lokale Erkennung: kein Text-Upload, keine Telemetrie, kein Remote-Server.",
           footerLeft: "KeyFix von Milad Ateight",
-          footerRight: "Projektseite: ateight.xyz/KeyFix"
+          footerRight: "Projektseite: ateight.xyz/KeyFix",
+          projNetDoctor: "NetDoctor",
+          projKeyFix: "KeyFix",
+          projHwmi: "Hybrid Web & Mail",
+          projDownloader: "Telegram-Downloader"
         }
       };
 
