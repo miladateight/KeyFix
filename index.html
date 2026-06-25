@@ -192,6 +192,67 @@
         background: rgba(34, 211, 238, 0.12);
       }
 
+      .project-menu {
+        position: relative;
+      }
+
+      .project-menu-panel {
+        position: absolute;
+        top: calc(100% + 10px);
+        left: 50%;
+        z-index: 30;
+        display: grid;
+        gap: 6px;
+        width: min(360px, calc(100vw - 40px));
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(3, 10, 19, 0.96);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(20px);
+        opacity: 0;
+        visibility: hidden;
+        transform: translate(-50%, 6px);
+        transition: opacity 150ms ease, transform 150ms ease, visibility 150ms ease;
+      }
+
+      .project-menu:hover .project-menu-panel,
+      .project-menu:focus-within .project-menu-panel {
+        opacity: 1;
+        visibility: visible;
+        transform: translate(-50%, 0);
+      }
+
+      .project-menu-intro {
+        padding: 9px;
+        border-bottom: 1px solid var(--line);
+        color: var(--text);
+      }
+
+      .project-menu-intro small,
+      .project-menu-panel a small {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 0.76rem;
+        line-height: 1.35;
+      }
+
+      .project-menu-panel a {
+        display: grid;
+        min-height: 50px;
+        padding: 9px 11px;
+        border: 1px solid rgba(125, 211, 252, 0.12);
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.42);
+        transition: border-color 150ms ease, background 150ms ease;
+      }
+
+      .project-menu-panel a:hover {
+        border-color: var(--line-strong);
+        background: rgba(34, 211, 238, 0.1);
+      }
+
       .lang-switch {
         gap: 4px;
         min-width: 0;
@@ -644,7 +705,29 @@
         }
 
         .nav {
+          flex-wrap: nowrap;
+          max-width: 100%;
+          overflow-x: auto;
+          justify-content: flex-start;
+        }
+
+        .nav a {
+          flex-shrink: 0;
+          white-space: nowrap;
+        }
+
+        .nav::-webkit-scrollbar {
           display: none;
+        }
+
+        .project-menu-panel {
+          left: 0;
+          transform: translateY(6px);
+        }
+
+        .project-menu:hover .project-menu-panel,
+        .project-menu:focus-within .project-menu-panel {
+          transform: translateY(0);
         }
 
         .lang-switch {
@@ -759,7 +842,31 @@
           <nav class="nav" aria-label="Page navigation">
             <a href="https://ateight.xyz/" data-i18n="navHome">Home</a>
             <a href="https://ateight.xyz/#about" data-i18n="navAbout">About Me</a>
-            <a href="https://ateight.xyz/#projects" data-i18n="navProjects">Projects</a>
+            <div class="project-menu">
+              <a href="https://ateight.xyz/#projects" data-i18n="navProjects">Projects</a>
+              <div class="project-menu-panel">
+                <div class="project-menu-intro">
+                  <strong data-i18n="navMenuTitle">Projects</strong>
+                  <small data-i18n="navMenuLead">Live project pages and source repositories.</small>
+                </div>
+                <a href="https://ateight.xyz/KeyFix/">
+                  <span>KeyFix</span>
+                  <small data-i18n="navMenuKeyfix">Privacy-first Windows utility</small>
+                </a>
+                <a href="https://ateight.xyz/NetDoctor/">
+                  <span>NetDoctor</span>
+                  <small data-i18n="navMenuNetdoctor">Network diagnosis and safe repair</small>
+                </a>
+                <a href="https://ateight.xyz/hybrid-web-mail-infrastructure/">
+                  <span>Hybrid Web &amp; Mail Infrastructure</span>
+                  <small data-i18n="navMenuHwmi">Production case study</small>
+                </a>
+                <a href="https://ateight.xyz/instagram-youtube-soundcloud-downloader/">
+                  <span>Media Downloader Bot</span>
+                  <small data-i18n="navMenuDownloader">Telegram automation</small>
+                </a>
+              </div>
+            </div>
             <a href="https://ateight.xyz/#contact" data-i18n="navContact">Contact Me</a>
           </nav>
           <div class="lang-switch" aria-label="Language switcher">
@@ -959,6 +1066,12 @@
           navAbout: "About Me",
           navProjects: "Projects",
           navContact: "Contact Me",
+          navMenuTitle: "Projects",
+          navMenuLead: "Live project pages and source repositories.",
+          navMenuKeyfix: "Privacy-first Windows utility",
+          navMenuNetdoctor: "Network diagnosis and safe repair",
+          navMenuHwmi: "Production case study",
+          navMenuDownloader: "Telegram automation",
           navFeatures: "Features",
           navFlow: "How it works",
           navDownload: "Download",
@@ -1033,6 +1146,12 @@
           navAbout: "درباره من",
           navProjects: "پروژه ها",
           navContact: "تماس با من",
+          navMenuTitle: "پروژه‌ها",
+          navMenuLead: "صفحه‌های فعال پروژه‌ها و ریپازیتوری‌های اصلی.",
+          navMenuKeyfix: "ابزار ویندوز با تمرکز بر حریم خصوصی",
+          navMenuNetdoctor: "تشخیص شبکه و ترمیم امن",
+          navMenuHwmi: "مطالعه موردی عملیاتی",
+          navMenuDownloader: "اتوماسیون تلگرام",
           navFeatures: "قابلیت ها",
           navFlow: "روند کار",
           navDownload: "دانلود",
@@ -1107,6 +1226,12 @@
           navAbout: "من أنا",
           navProjects: "المشاريع",
           navContact: "تواصل معي",
+          navMenuTitle: "المشاريع",
+          navMenuLead: "صفحات المشاريع المباشرة والمستودعات الأساسية.",
+          navMenuKeyfix: "أداة Windows تركز على الخصوصية",
+          navMenuNetdoctor: "تشخيص الشبكة وإصلاح آمن",
+          navMenuHwmi: "دراسة حالة تشغيلية",
+          navMenuDownloader: "أتمتة Telegram",
           navFeatures: "الميزات",
           navFlow: "طريقة العمل",
           navDownload: "تحميل",
@@ -1181,6 +1306,12 @@
           navAbout: "About Me",
           navProjects: "Projects",
           navContact: "Contact Me",
+          navMenuTitle: "Projekte",
+          navMenuLead: "Live-Projektseiten und die zugehörigen Repositories.",
+          navMenuKeyfix: "Datenschutzfreundliches Windows-Tool",
+          navMenuNetdoctor: "Netzwerkdiagnose und sichere Reparatur",
+          navMenuHwmi: "Praxisnaher Betriebsfall",
+          navMenuDownloader: "Telegram-Automation",
           navFeatures: "Funktionen",
           navFlow: "Ablauf",
           navDownload: "Download",
