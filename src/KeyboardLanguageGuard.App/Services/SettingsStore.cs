@@ -1,5 +1,5 @@
 using System.Text.Json;
-using KeyboardLanguageGuard.Core;
+using KeyboardLanguageGuard.Core.Settings;
 
 namespace KeyboardLanguageGuard.App.Services;
 
@@ -55,7 +55,9 @@ public sealed class SettingsStore
     {
         Directory.CreateDirectory(SettingsDirectory);
         string json = JsonSerializer.Serialize(settings, JsonOptions);
-        File.WriteAllText(SettingsPath, json);
+        string tempPath = SettingsPath + ".tmp";
+        File.WriteAllText(tempPath, json);
+        File.Move(tempPath, SettingsPath, overwrite: true);
     }
 
     private static bool Normalize(AppSettings settings)

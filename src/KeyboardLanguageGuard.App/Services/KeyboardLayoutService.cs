@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using KeyboardLanguageGuard.Core;
+using KeyboardLanguageGuard.Core.Settings;
 
 namespace KeyboardLanguageGuard.App.Services;
 

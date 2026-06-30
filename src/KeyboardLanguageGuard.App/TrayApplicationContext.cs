@@ -2,7 +2,9 @@ using System.Drawing;
 using System.Windows.Forms;
 using KeyboardLanguageGuard.App.Services;
 using KeyboardLanguageGuard.App.UI;
-using KeyboardLanguageGuard.Core;
+using KeyboardLanguageGuard.Core.Detection;
+using KeyboardLanguageGuard.Core.Settings;
+using KeyboardLanguageGuard.Core.Text;
 
 namespace KeyboardLanguageGuard.App;
 
@@ -217,6 +219,7 @@ public sealed class TrayApplicationContext : ApplicationContext
     {
         _inputVersion++;
         _buffer.Clear();
+        _detector.Context.Clear();
     }
 
     private bool IsForegroundProcessExcluded()
@@ -243,8 +246,15 @@ public sealed class TrayApplicationContext : ApplicationContext
         DetectionResult result = _detector.Detect(request.Scope, request.CurrentLanguage, _settings);
         if (!result.ShouldAlert)
         {
+            // Record the current language as the user's intent so the context
+            // can bias future detections toward it.
+            _detector.Context.Record(request.CurrentLanguage);
             return;
         }
+
+        // Record the suggested language so the context knows the user is now
+        // typing in this language.
+        _detector.Context.Record(result.SuggestedLanguage);
 
         bool canNotify = DateTimeOffset.Now - _lastAlert >= TimeSpan.FromSeconds(3);
         if (canNotify)

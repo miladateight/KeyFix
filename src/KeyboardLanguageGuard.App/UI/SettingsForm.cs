@@ -1,6 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
-using KeyboardLanguageGuard.Core;
+using KeyboardLanguageGuard.Core.Settings;
 
 namespace KeyboardLanguageGuard.App.UI;
 
