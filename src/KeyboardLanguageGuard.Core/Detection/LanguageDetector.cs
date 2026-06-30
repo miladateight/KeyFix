@@ -15,6 +15,7 @@ public sealed class LanguageDetector
 {
     private readonly IWordDictionary _dictionary;
     private readonly IKeyboardLayoutTransformer _transformer;
+    private readonly LanguageContext _context = new();
 
     private static readonly char[] WordSeparators = [' ', '\t', '\r', '\n', '‌', '‍'];
 
@@ -26,6 +27,9 @@ public sealed class LanguageDetector
         _dictionary = dictionary;
         _transformer = transformer;
     }
+
+    /// <summary>The shared language context. The tray app feeds it after each detection.</summary>
+    public LanguageContext Context => _context;
 
     public DetectionResult Detect(string text, LanguageKind currentLanguage, AppSettings settings)
     {
@@ -42,6 +46,12 @@ public sealed class LanguageDetector
         {
             string transformed = _transformer.Transform(normalized, currentLanguage, profile.Language);
             int candidateScore = Score(profile.Language, transformed);
+
+            // Context bias: if the user has been typing in the candidate language recently,
+            // boost the candidate score so the detector is more likely to catch layout mistakes.
+            int contextBias = _context.GetBias(profile.Language);
+            candidateScore += contextBias;
+
             int difference = candidateScore - currentScore;
 
             if (!IsReliableCandidate(currentLanguage, profile.Language, normalized, transformed, difference) ||

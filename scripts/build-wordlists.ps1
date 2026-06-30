@@ -116,14 +116,16 @@ function Test-GermanWord {
 function Test-PersianWord {
     param([string] $Word)
     if ($Word.Length -lt 2) { return $false }
-    $persianChars = @(
-        0x067E, 0x0686, 0x0698, 0x06AF, 0x06A9, 0x06CC,
-        0x0622, 0x0626, 0x0640, 0x200C
-    )
+    # Accept any word that is entirely in the Arabic block (U+0600–U+06FF).
+    # Persian shares this block with Arabic; the detector's layout maps handle
+    # the distinction at runtime. Being too strict drops common words like مثلا, مثل, ببین, سلام.
     foreach ($ch in $Word.ToCharArray()) {
-        if ($persianChars -contains [int]$ch) { return $true }
+        $code = [int]$ch
+        if ($code -lt 0x0600 -or $code -gt 0x06FF) {
+            if ($code -ne 0x200C) { return $false } # ZWNJ is common in Persian
+        }
     }
-    return $false
+    return $true
 }
 
 function Test-ArabicWord {
