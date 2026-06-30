@@ -147,23 +147,22 @@ public sealed class LanguageDetector
         string transformedText,
         int scoreDifference)
     {
-        if (scoreDifference < ThresholdForLength(observedText.Length, currentLanguage, candidateLanguage))
+        // Never rewrite text that is already a real word in the current layout's language.
+        // This is the single most important rule: if the user typed a valid word, trust it.
+        if (IsSingleKnownWord(currentLanguage, observedText))
         {
             return false;
         }
 
         bool transformedKnown = IsSingleKnownWord(candidateLanguage, transformedText);
 
-        // Never rewrite text that is already a real word in the current layout's language,
-        // unless it is a very short word (2 chars) where the candidate is a much stronger
-        // dictionary match — common 2-letter words like "of"/"he"/"it" often collide with
-        // real Persian/Arabic words when typed under the wrong layout.
-        if (IsSingleKnownWord(currentLanguage, observedText))
+        // If the user has been consistently typing in the current language, require a
+        // much stronger signal before switching away.
+        int contextPenalty = _context.IsLikelyCurrentLanguage(currentLanguage) ? 12 : 0;
+
+        if (scoreDifference < ThresholdForLength(observedText.Length, currentLanguage, candidateLanguage) + contextPenalty)
         {
-            if (observedText.Length > 2 || !transformedKnown)
-            {
-                return false;
-            }
+            return false;
         }
 
         // Two-letter words are only accepted when the transformed text is a known dictionary word.
