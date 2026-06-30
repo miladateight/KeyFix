@@ -6,11 +6,6 @@ using KeyboardLanguageGuard.Core.Settings;
 
 namespace KeyboardLanguageGuard.Core.Detection;
 
-/// <summary>
-/// Detects whether the user typed under the wrong keyboard layout by scoring the observed text
-/// against the active language and every other enabled language. The scoring uses a combination
-/// of character-script signals, word-shape heuristics, and a large embedded word dictionary.
-/// </summary>
 public sealed class LanguageDetector
 {
     private readonly IWordDictionary _dictionary;
@@ -21,14 +16,12 @@ public sealed class LanguageDetector
 
     public LanguageDetector() : this(new EmbeddedWordDictionary(), new KeyboardLayoutTransformer()) { }
 
-    /// <summary>Test seam for injecting custom dictionary and layout transformer.</summary>
     public LanguageDetector(IWordDictionary dictionary, IKeyboardLayoutTransformer transformer)
     {
         _dictionary = dictionary;
         _transformer = transformer;
     }
 
-    /// <summary>The shared language context. The tray app feeds it after each detection.</summary>
     public LanguageContext Context => _context;
 
     public DetectionResult Detect(string text, LanguageKind currentLanguage, AppSettings settings)
@@ -47,10 +40,10 @@ public sealed class LanguageDetector
             string transformed = _transformer.Transform(normalized, currentLanguage, profile.Language);
             int candidateScore = Score(profile.Language, transformed);
 
-            // Context bias: if the user has been typing in the candidate language recently,
-            // boost the candidate score so the detector is more likely to catch layout mistakes.
-            int contextBias = _context.GetBias(profile.Language);
-            candidateScore += contextBias;
+            // Context boost: if the user has been typing in the candidate language,
+            // make it easier to catch layout mistakes.
+            int contextBoost = _context.GetBias(profile.Language);
+            candidateScore += contextBoost;
 
             int difference = candidateScore - currentScore;
 
@@ -88,7 +81,6 @@ public sealed class LanguageDetector
             score += ScoreCharacter(language, item);
         }
 
-        // Dictionary match is the strongest signal: +15 per token that is a real word.
         foreach (string token in text.Split(WordSeparators, StringSplitOptions.RemoveEmptyEntries))
         {
             if (_dictionary.Contains(language, token))
@@ -147,8 +139,7 @@ public sealed class LanguageDetector
         string transformedText,
         int scoreDifference)
     {
-        // Never rewrite text that is already a real word in the current layout's language.
-        // This is the single most important rule: if the user typed a valid word, trust it.
+        // Rule 1: Never rewrite text that is already a real word in the current language.
         if (IsSingleKnownWord(currentLanguage, observedText))
         {
             return false;
@@ -156,23 +147,54 @@ public sealed class LanguageDetector
 
         bool transformedKnown = IsSingleKnownWord(candidateLanguage, transformedText);
 
-        // If the user has been consistently typing in the current language, require a
-        // much stronger signal before switching away.
-        int contextPenalty = _context.IsLikelyCurrentLanguage(currentLanguage) ? 12 : 0;
+        // Rule 2: Script analysis.
+        bool observedIsAllLatin = observedText.All(IsBasicLatin);
+        bool observedHasArabic = observedText.Any(IsArabicBlock);
+        bool currentIsLatin = currentLanguage is LanguageKind.English or LanguageKind.German;
+        bool candidateIsLatin = candidateLanguage is LanguageKind.English or LanguageKind.German;
+        bool candidateIsArabic = candidateLanguage is LanguageKind.Persian or LanguageKind.Arabic;
 
-        if (scoreDifference < ThresholdForLength(observedText.Length, currentLanguage, candidateLanguage) + contextPenalty)
+        // Strong script mismatch: every character is in the candidate's script,
+        // none in the current language's script. This is the clearest signal.
+        bool strongScriptMismatch =
+            (currentIsLatin && observedHasArabic && !observedIsAllLatin && candidateIsArabic) ||
+            (!currentIsLatin && observedHasArabic && !observedIsAllLatin && candidateIsLatin);
+
+        // Rule 3: Two-letter words require strong script mismatch.
+        // Without it, sequences like "hu" (which maps to Persian "اع") cause
+        // false corrections during normal English typing.
+        if (observedText.Length <= 2 && !strongScriptMismatch)
         {
             return false;
         }
 
-        // Two-letter words are only accepted when the transformed text is a known dictionary word.
-        if (observedText.Length <= 2 && !transformedKnown)
+        // Rule 4: Context boost only — never penalise.
+        // If the user has been typing in the candidate language, lower the threshold.
+        int contextBoost = _context.GetBias(candidateLanguage);
+        int effectiveThreshold = ThresholdForLength(observedText.Length, currentLanguage, candidateLanguage) - contextBoost;
+
+        // Strong script mismatch gets an even lower threshold.
+        if (strongScriptMismatch)
+        {
+            effectiveThreshold = Math.Max(0, effectiveThreshold - 4);
+        }
+
+        if (scoreDifference < effectiveThreshold)
         {
             return false;
         }
 
-        if (currentLanguage is LanguageKind.Persian or LanguageKind.Arabic &&
-            candidateLanguage is LanguageKind.English or LanguageKind.German)
+        // Rule 5: For Latin→Arabic candidates, the transformed text must contain
+        // Arabic characters and be a known word.
+        if (currentIsLatin && candidateIsArabic)
+        {
+            return transformedText.Any(IsArabicBlock) && transformedKnown;
+        }
+
+        // Rule 6: For Arabic→Latin candidates, the observed text must not contain
+        // Latin characters (mixed-script), and the candidate must be a known word
+        // or have a strong Latin word shape.
+        if (!currentIsLatin && candidateIsLatin)
         {
             if (observedText.Any(IsBasicLatin))
             {
@@ -182,12 +204,7 @@ public sealed class LanguageDetector
             return transformedKnown || IsStrongLatinCandidate(candidateLanguage, transformedText);
         }
 
-        if (currentLanguage is LanguageKind.English or LanguageKind.German &&
-            candidateLanguage is LanguageKind.Persian or LanguageKind.Arabic)
-        {
-            return transformedText.Any(IsArabicBlock) && transformedKnown;
-        }
-
+        // Rule 7: For same-script pairs (e.g. English↔German), require a dictionary match.
         return transformedKnown;
     }
 
@@ -202,7 +219,7 @@ public sealed class LanguageDetector
         return _dictionary.Contains(language, trimmed);
     }
 
-    private static int MinimumCharacters => 2;
+    private static int MinimumCharacters => 3;
 
     private static int Threshold(LanguageKind currentLanguage, LanguageKind candidateLanguage)
     {
