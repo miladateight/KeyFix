@@ -137,18 +137,30 @@ public sealed class LanguageDetector
         string transformedText,
         int scoreDifference)
     {
-        if (scoreDifference < Threshold(currentLanguage, candidateLanguage))
-        {
-            return false;
-        }
-
-        // Never rewrite text that is already a real word in the current layout's language.
-        if (IsSingleKnownWord(currentLanguage, observedText))
+        if (scoreDifference < ThresholdForLength(observedText.Length, currentLanguage, candidateLanguage))
         {
             return false;
         }
 
         bool transformedKnown = IsSingleKnownWord(candidateLanguage, transformedText);
+
+        // Never rewrite text that is already a real word in the current layout's language,
+        // unless it is a very short word (2 chars) where the candidate is a much stronger
+        // dictionary match — common 2-letter words like "of"/"he"/"it" often collide with
+        // real Persian/Arabic words when typed under the wrong layout.
+        if (IsSingleKnownWord(currentLanguage, observedText))
+        {
+            if (observedText.Length > 2 || !transformedKnown)
+            {
+                return false;
+            }
+        }
+
+        // Two-letter words are only accepted when the transformed text is a known dictionary word.
+        if (observedText.Length <= 2 && !transformedKnown)
+        {
+            return false;
+        }
 
         if (currentLanguage is LanguageKind.Persian or LanguageKind.Arabic &&
             candidateLanguage is LanguageKind.English or LanguageKind.German)
@@ -181,7 +193,7 @@ public sealed class LanguageDetector
         return _dictionary.Contains(language, trimmed);
     }
 
-    private static int MinimumCharacters => 3;
+    private static int MinimumCharacters => 2;
 
     private static int Threshold(LanguageKind currentLanguage, LanguageKind candidateLanguage)
     {
@@ -204,6 +216,16 @@ public sealed class LanguageDetector
         }
 
         return 12;
+    }
+
+    private static int ThresholdForLength(int length, LanguageKind currentLanguage, LanguageKind candidateLanguage)
+    {
+        if (length <= 2)
+        {
+            return 0;
+        }
+
+        return Threshold(currentLanguage, candidateLanguage);
     }
 
     private static bool IsStrongLatinCandidate(LanguageKind language, string text)

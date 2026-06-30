@@ -180,6 +180,44 @@ public sealed class LanguageDetectorTests
     }
 
     [Fact]
+    public void Catches_Two_Letter_English_Be_Under_Persian()
+    {
+        DetectionResult result = _detector.Detect("ذث", LanguageKind.Persian, _settings);
+        Assert.True(result.ShouldAlert);
+        Assert.Equal("be", result.TextToInsert, ignoreCase: true);
+    }
+
+    [Fact]
+    public void Catches_Two_Letter_English_He_Under_Persian()
+    {
+        DetectionResult result = _detector.Detect("اث", LanguageKind.Persian, _settings);
+        Assert.True(result.ShouldAlert);
+        Assert.Equal("he", result.TextToInsert, ignoreCase: true);
+    }
+
+    [Fact]
+    public void Catches_Two_Letter_English_It_Under_Persian()
+    {
+        DetectionResult result = _detector.Detect("هف", LanguageKind.Persian, _settings);
+        Assert.True(result.ShouldAlert);
+        Assert.Equal("it", result.TextToInsert, ignoreCase: true);
+    }
+
+    [Fact]
+    public void Does_Not_Rewrite_Two_Letter_Real_English_Word()
+    {
+        DetectionResult result = _detector.Detect("of", LanguageKind.English, _settings);
+        Assert.False(result.ShouldAlert);
+    }
+
+    [Fact]
+    public void Does_Not_Rewrite_Two_Letter_Real_English_Word_He()
+    {
+        DetectionResult result = _detector.Detect("he", LanguageKind.English, _settings);
+        Assert.False(result.ShouldAlert);
+    }
+
+    [Fact]
     public void CharactersToReplace_Matches_Observed_Text_Length()
     {
         DetectionResult result = _detector.Detect("اثممخ", LanguageKind.Persian, _settings);
