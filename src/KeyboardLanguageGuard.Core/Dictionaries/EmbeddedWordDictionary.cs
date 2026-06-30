@@ -1,33 +1,41 @@
 using System.Reflection;
 using System.Text;
+using KeyboardLanguageGuard.Core.Settings;
 
-namespace KeyboardLanguageGuard.Core;
+namespace KeyboardLanguageGuard.Core.Dictionaries;
 
-/// <summary>
-/// Frequency-based word lists (roughly the 6000 most common words per language) used to decide
-/// whether layout-transformed text forms a real word. The lists are embedded resources derived
-/// from the OpenSubtitles frequency data (see THIRD_PARTY_NOTICES.md).
-/// </summary>
-public static class WordDictionary
+/// <inheritdoc />
+public sealed class EmbeddedWordDictionary : IWordDictionary
 {
-    private static readonly IReadOnlyDictionary<LanguageKind, HashSet<string>> Words = Load();
+    private readonly IReadOnlyDictionary<LanguageKind, HashSet<string>> _words;
 
-    public static bool Contains(LanguageKind language, string word)
+    public EmbeddedWordDictionary() : this(LoadFromEmbeddedResources()) { }
+
+    /// <summary>Test seam so a custom source (or a memory dictionary in unit tests) can be injected.</summary>
+    public EmbeddedWordDictionary(IReadOnlyDictionary<LanguageKind, HashSet<string>> words)
+    {
+        _words = words;
+    }
+
+    public bool Contains(LanguageKind language, string word)
     {
         if (string.IsNullOrWhiteSpace(word))
         {
             return false;
         }
 
-        return Words.TryGetValue(language, out HashSet<string>? set) && set.Contains(Normalize(language, word));
+        return _words.TryGetValue(language, out HashSet<string>? set) &&
+               set.Contains(Normalise(language, word));
     }
 
-    public static int Count(LanguageKind language)
-    {
-        return Words.TryGetValue(language, out HashSet<string>? set) ? set.Count : 0;
-    }
+    public int Count(LanguageKind language) =>
+        _words.TryGetValue(language, out HashSet<string>? set) ? set.Count : 0;
 
-    public static string Normalize(LanguageKind language, string word)
+    /// <summary>
+    /// Normalises a word for dictionary lookup. The rules mirror what the detector needs so the same
+    /// string the user types is compared with the same string we stored at build time.
+    /// </summary>
+    public static string Normalise(LanguageKind language, string word)
     {
         word = word.Trim();
         if (language is LanguageKind.English or LanguageKind.German)
@@ -61,7 +69,7 @@ public static class WordDictionary
         return builder.ToString();
     }
 
-    private static IReadOnlyDictionary<LanguageKind, HashSet<string>> Load()
+    private static IReadOnlyDictionary<LanguageKind, HashSet<string>> LoadFromEmbeddedResources()
     {
         return new Dictionary<LanguageKind, HashSet<string>>
         {
@@ -75,7 +83,7 @@ public static class WordDictionary
     private static HashSet<string> LoadResource(string fileName, LanguageKind language)
     {
         HashSet<string> set = new(StringComparer.Ordinal);
-        Assembly assembly = typeof(WordDictionary).Assembly;
+        Assembly assembly = typeof(EmbeddedWordDictionary).Assembly;
         string? resourceName = assembly
             .GetManifestResourceNames()
             .FirstOrDefault(name => name.EndsWith(fileName, StringComparison.OrdinalIgnoreCase));
@@ -95,7 +103,7 @@ public static class WordDictionary
         string? line;
         while ((line = reader.ReadLine()) is not null)
         {
-            string word = Normalize(language, line);
+            string word = Normalise(language, line);
             if (word.Length >= 2)
             {
                 set.Add(word);

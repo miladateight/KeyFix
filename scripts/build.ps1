@@ -12,5 +12,5 @@ if (-not (Test-Path $dotnet)) {
 & $dotnet build .\KeyboardLanguageGuard.sln --configuration Release
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-& $dotnet run --project .\tests\KeyboardLanguageGuard.Tests\KeyboardLanguageGuard.Tests.csproj --configuration Release
+& $dotnet test .\tests\KeyboardLanguageGuard.Tests\KeyboardLanguageGuard.Tests.csproj --configuration Release --no-build
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

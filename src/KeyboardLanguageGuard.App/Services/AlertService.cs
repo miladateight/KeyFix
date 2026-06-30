@@ -1,5 +1,5 @@
 using System.Media;
-using KeyboardLanguageGuard.Core;
+using KeyboardLanguageGuard.Core.Settings;
 
 namespace KeyboardLanguageGuard.App.Services;
 

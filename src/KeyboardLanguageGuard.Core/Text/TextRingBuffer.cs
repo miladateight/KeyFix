@@ -1,14 +1,29 @@
 using System.Text;
 
-namespace KeyboardLanguageGuard.Core;
+namespace KeyboardLanguageGuard.Core.Text;
 
-public sealed class TextRingBuffer(int capacity = 48)
+/// <summary>
+/// A short rolling buffer of typed characters. Used by the tray app to keep the most recent word
+/// (and its trailing whitespace) so the detector can decide what to rewrite after Space.
+/// </summary>
+public sealed class TextRingBuffer
 {
-    private readonly int _capacity = Math.Max(8, capacity);
-    private readonly StringBuilder _text = new();
+    private readonly int _capacity;
+    private readonly StringBuilder _text;
 
+    public TextRingBuffer(int capacity = 48)
+    {
+        _capacity = Math.Max(8, capacity);
+        _text = new StringBuilder(_capacity);
+    }
+
+    /// <summary>The full text currently held by the buffer.</summary>
     public string Text => _text.ToString();
 
+    /// <summary>
+    /// The previous word (the text between the last whitespace boundary and the cursor), trimmed
+    /// of any trailing whitespace. Empty when the buffer only holds whitespace.
+    /// </summary>
     public string CurrentCorrectionScope
     {
         get
@@ -35,6 +50,7 @@ public sealed class TextRingBuffer(int capacity = 48)
         }
     }
 
+    /// <summary>Any whitespace characters that follow the current correction scope.</summary>
     public string TrailingWhitespace
     {
         get
@@ -50,6 +66,7 @@ public sealed class TextRingBuffer(int capacity = 48)
         }
     }
 
+    /// <summary>Append a typed character. Control characters are ignored.</summary>
     public void Append(char value)
     {
         if (char.IsControl(value))
@@ -61,6 +78,7 @@ public sealed class TextRingBuffer(int capacity = 48)
         Trim();
     }
 
+    /// <summary>Removes the most recently typed character (Backspace).</summary>
     public void Backspace()
     {
         if (_text.Length > 0)
@@ -69,10 +87,8 @@ public sealed class TextRingBuffer(int capacity = 48)
         }
     }
 
-    public void Clear()
-    {
-        _text.Clear();
-    }
+    /// <summary>Removes everything from the buffer.</summary>
+    public void Clear() => _text.Clear();
 
     private void Trim()
     {

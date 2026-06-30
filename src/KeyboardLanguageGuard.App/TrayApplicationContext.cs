@@ -2,7 +2,9 @@ using System.Drawing;
 using System.Windows.Forms;
 using KeyboardLanguageGuard.App.Services;
 using KeyboardLanguageGuard.App.UI;
-using KeyboardLanguageGuard.Core;
+using KeyboardLanguageGuard.Core.Detection;
+using KeyboardLanguageGuard.Core.Settings;
+using KeyboardLanguageGuard.Core.Text;
 
 namespace KeyboardLanguageGuard.App;
 
