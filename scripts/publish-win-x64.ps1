@@ -22,5 +22,8 @@ if (Test-Path $publishDir) {
     --configuration Release `
     --runtime win-x64 `
     --self-contained:$SelfContained `
+    -p:DebugType=None `
+    -p:DebugSymbols=false `
+    -p:SatelliteResourceLanguages=en `
     --output $publishDir
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

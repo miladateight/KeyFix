@@ -19,12 +19,8 @@ public sealed class TextCorrectionService
 
         try
         {
-            // Build the whole correction (all backspaces + all replacement characters) as a
-            // single atomic SendInput batch. Sending it in one call makes the replacement
-            // effectively instantaneous, so it cannot interleave with the user's next real
-            // keystrokes when they type quickly. The events stay in order in the target's
-            // input queue: the backspaces delete the mistyped word, then the Unicode
-            // characters insert the corrected text.
+            // Try one atomic SendInput batch first. If Windows rejects the whole batch, use a
+            // safer clipboard path that still deletes the mistyped word before pasting.
             Input[] inputs = BuildReplacementInputs(charactersToReplace, replacement);
             uint sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>());
 
@@ -33,8 +29,7 @@ public sealed class TextCorrectionService
                 return true;
             }
 
-            // Injection was rejected by the target app: fall back to clipboard paste.
-            return PasteText(replacement);
+            return sent == 0 && ReplaceUsingClipboard(charactersToReplace, replacement);
         }
         catch
         {
@@ -63,6 +58,30 @@ public sealed class TextCorrectionService
         return inputs;
     }
 
+    private static bool ReplaceUsingClipboard(int charactersToReplace, string replacement)
+    {
+        Input[] backspaces = BuildBackspaceInputs(charactersToReplace);
+        if (SendInput((uint)backspaces.Length, backspaces, Marshal.SizeOf<Input>()) != backspaces.Length)
+        {
+            return false;
+        }
+
+        return PasteText(replacement);
+    }
+
+    private static Input[] BuildBackspaceInputs(int backspaceCount)
+    {
+        Input[] inputs = new Input[backspaceCount * 2];
+        int offset = 0;
+
+        for (int index = 0; index < backspaceCount; index++)
+        {
+            inputs[offset++] = KeyboardInput(VkBack, 0, 0);
+            inputs[offset++] = KeyboardInput(VkBack, 0, KeyEventKeyUp);
+        }
+
+        return inputs;
+    }
     private static bool PasteText(string text)
     {
         IDataObject? previousClipboard = null;

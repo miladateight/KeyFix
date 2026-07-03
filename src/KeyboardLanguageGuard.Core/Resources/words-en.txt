@@ -6785,7 +6785,6 @@ owl
 carnival
 unstable
 dc
-claude
 syndrome
 transplant
 incoming
@@ -15881,7 +15880,6 @@ tian
 benito
 disadvantage
 excite
-gemini
 kommandant
 mcnally
 pegasus
@@ -20738,7 +20736,6 @@ looted
 presentable
 sculpting
 sprinkles
-claudette
 exterminated
 improv
 keepin
@@ -26471,7 +26468,6 @@ unmistakable
 cellars
 cochise
 congenital
-copilot
 diffuse
 esp
 eyeliner
@@ -27237,7 +27233,6 @@ aztecs
 bijou
 buzzers
 christmases
-codex
 dorset
 effectiveness
 geller
