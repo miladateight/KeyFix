@@ -17,7 +17,7 @@ The Core library has been restructured into five focused namespaces:
 Every component now accepts its dependencies through constructors, making the code testable and ready for future DI integration.
 
 ### xUnit Test Suite
-The old console test harness has been replaced with 41 xUnit tests covering:
+The old console test harness has been replaced with 43 xUnit tests covering:
 
 - Layout transforms (Persian→English, English→Persian, QWERTY→QWERTZ)
 - Detection accuracy (positive and negative cases)
@@ -30,6 +30,9 @@ A new `scripts/build-wordlists.ps1` script downloads and merges frequency data f
 
 ### Settings Schema v6
 The settings version has been bumped to 6. Existing settings files are migrated automatically on first launch.
+
+### Release Polish
+Layout transformation now uses cached reverse key lookups for less per-keystroke overhead, and the clipboard fallback only pastes after the previous mistyped word has been removed successfully. Published builds are smaller because debug symbols and unused .NET satellite resources are excluded from release packages.
 
 ## Breaking Changes
 

@@ -31,8 +31,8 @@ Important: after installing KeyFix, open **Settings** and keep only the language
 - Three detection modes: `AlertOnly`, `AlertAndSuggest`, and `AutoSwitch`
 - Automatic correction of the previous mistyped word in `AutoSwitch` mode
 - Correction happens after Space, so KeyFix does not rewrite words while you are still typing
-- Dictionary-based detection using common words for English, Persian, Arabic, and German
-- Direct Unicode text replacement, with clipboard paste kept only as a fallback path
+- Dictionary-based detection using expanded word lists for English, Persian, Arabic, and German
+- Fast Unicode text replacement, with a guarded clipboard fallback path
 - Optional launch at Windows startup
 - Built-in Windows alert sound
 - Optional custom `.wav` alert sound
@@ -70,7 +70,7 @@ KeyFix clears its buffer after Enter, Tab, unsupported layouts, excluded apps, a
 Download the latest installer from the [GitHub Releases page](https://github.com/miladateight/KeyFix/releases/latest):
 
 ```text
-KeyFixSetup-0.4.0.exe
+KeyFixSetup-0.5.0.exe
 ```
 
 After installing:
@@ -112,7 +112,7 @@ Manual build and test:
 
 ```powershell
 dotnet build .\KeyboardLanguageGuard.sln --configuration Release
-dotnet run --project .\tests\KeyboardLanguageGuard.Tests\KeyboardLanguageGuard.Tests.csproj --configuration Release
+dotnet test .\KeyboardLanguageGuard.sln --configuration Release
 ```
 
 ## Run Locally
@@ -142,7 +142,7 @@ src/
   KeyboardLanguageGuard.Core/   detection logic, dictionaries, and keyboard layout maps
   KeyboardLanguageGuard.App/    Windows tray app, settings UI, hooks, alerts, and correction services
 tests/
-  KeyboardLanguageGuard.Tests/  dependency-free console tests
+  KeyboardLanguageGuard.Tests/  xUnit test suite
 installer/                      Inno Setup script and installer assets
 assets/                         logos and icons
 scripts/                        build, publish, and packaging scripts

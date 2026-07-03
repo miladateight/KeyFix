@@ -5,9 +5,12 @@
 - Expanded embedded word dictionaries from ~6,000 to ~30,000 words per language (English, German, Arabic) and ~26,000 for Persian, using merged OpenSubtitles 2016 + 2018 frequency data.
 - Rewrote the Core library with a clean layered architecture: `Detection`, `Dictionaries`, `Layout`, `Settings`, and `Text` namespaces with proper interfaces and DI-ready constructors.
 - Removed hard-coded hint words; the larger dictionary now provides stronger and more reliable detection signals.
-- Replaced the console test harness with 41 xUnit tests covering layout transforms, detection, dictionary lookups, ring buffer behaviour, and settings defaults.
+- Replaced the console test harness with 43 xUnit tests covering layout transforms, detection, dictionary lookups, ring buffer behaviour, and settings defaults.
 - Added `scripts/build-wordlists.ps1` for reproducible word-list generation from the hermitdave/FrequencyWords repository.
 - Bumped settings schema version to 6 for forward compatibility.
+- Optimized layout transformation by caching reverse key lookups instead of scanning maps for every matched character.
+- Hardened the clipboard fallback so it only pastes after the mistyped word has been removed successfully.
+- Reduced release package size by excluding debug symbols and unused .NET satellite resources from published builds.
 
 ## 0.4.0 - 2026-06-23
 

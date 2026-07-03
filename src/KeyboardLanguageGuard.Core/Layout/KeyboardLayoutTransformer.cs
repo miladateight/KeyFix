@@ -16,6 +16,7 @@ public sealed class KeyboardLayoutTransformer : IKeyboardLayoutTransformer
 
     private readonly IReadOnlyDictionary<LanguageKind, IReadOnlyDictionary<char, string>> _maps;
     private readonly IReadOnlyDictionary<LanguageKind, IReadOnlyDictionary<char, List<string>>> _reverseLookups;
+    private readonly IReadOnlyDictionary<LanguageKind, IReadOnlyDictionary<string, char>> _reverseKeys;
 
     public KeyboardLayoutTransformer() : this(BuildDefaultMaps()) { }
 
@@ -23,6 +24,7 @@ public sealed class KeyboardLayoutTransformer : IKeyboardLayoutTransformer
     {
         _maps = maps;
         _reverseLookups = BuildReverseLookups(maps);
+        _reverseKeys = BuildReverseKeys(maps);
     }
 
     public string Transform(string text, LanguageKind sourceLayout, LanguageKind targetLayout)
@@ -32,9 +34,10 @@ public sealed class KeyboardLayoutTransformer : IKeyboardLayoutTransformer
             return text;
         }
 
-        if (!_maps.TryGetValue(sourceLayout, out var sourceMap) ||
+        if (!_maps.TryGetValue(sourceLayout, out _) ||
             !_maps.TryGetValue(targetLayout, out var targetMap) ||
-            !_reverseLookups.TryGetValue(sourceLayout, out var lookup))
+            !_reverseLookups.TryGetValue(sourceLayout, out var lookup) ||
+            !_reverseKeys.TryGetValue(sourceLayout, out var reverseKeys))
         {
             return text;
         }
@@ -50,9 +53,9 @@ public sealed class KeyboardLayoutTransformer : IKeyboardLayoutTransformer
                 foreach (string candidate in candidates)
                 {
                     if (index + candidate.Length <= text.Length &&
-                        string.Compare(text, index, candidate, 0, candidate.Length, StringComparison.OrdinalIgnoreCase) == 0)
+                        string.Compare(text, index, candidate, 0, candidate.Length, StringComparison.OrdinalIgnoreCase) == 0 &&
+                        reverseKeys.TryGetValue(candidate, out char key))
                     {
-                        char key = sourceMap.First(p => string.Equals(p.Value, candidate, StringComparison.OrdinalIgnoreCase)).Key;
                         output.Append(targetMap.TryGetValue(key, out string? mapped) ? mapped : candidate);
                         index += candidate.Length;
                         matched = true;
@@ -67,6 +70,23 @@ public sealed class KeyboardLayoutTransformer : IKeyboardLayoutTransformer
         }
 
         return output.ToString();
+    }
+    private static IReadOnlyDictionary<LanguageKind, IReadOnlyDictionary<string, char>> BuildReverseKeys(
+        IReadOnlyDictionary<LanguageKind, IReadOnlyDictionary<char, string>> maps)
+    {
+        var result = new Dictionary<LanguageKind, IReadOnlyDictionary<string, char>>();
+        foreach (var (language, map) in maps)
+        {
+            var lookup = new Dictionary<string, char>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (key, value) in map)
+            {
+                lookup.TryAdd(value, key);
+            }
+
+            result[language] = lookup;
+        }
+
+        return result;
     }
 
     private static IReadOnlyDictionary<LanguageKind, IReadOnlyDictionary<char, List<string>>> BuildReverseLookups(
