@@ -1,0 +1,4 @@
+[
+  { "input": "السلام", "activeLanguage": "ar", "expectedAction": "NoCorrection", "category": "valid-word" },
+  { "input": "كتاب",   "activeLanguage": "ar", "expectedAction": "NoCorrection", "category": "valid-word" }
+]

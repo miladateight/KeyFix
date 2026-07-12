@@ -28,6 +28,24 @@ Build the installer:
 .\scripts\package-installer.ps1
 ```
 
+Run the evaluation harness (reports precision/recall/latency against the labeled corpus under `tools\KeyFix.Evaluation\EvaluationData`):
+
+```powershell
+dotnet run --project .\tools\KeyFix.Evaluation\KeyFix.Evaluation.csproj --configuration Release
+```
+
+Run the benchmark tool (timing/allocation micro-benchmarks; dev-only, never shipped):
+
+```powershell
+dotnet run --project .\tools\KeyFix.Benchmarks\KeyFix.Benchmarks.csproj --configuration Release
+```
+
+Validate the embedded word lists (counts, duplicates, invalid Unicode, blacklist removals, checksums):
+
+```powershell
+.\scripts\validate-wordlists.ps1
+```
+
 ## Privacy Rules
 
 KeyFix uses Windows keyboard hooks, so privacy-sensitive changes must be reviewed carefully.

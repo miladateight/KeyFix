@@ -1,0 +1,10 @@
+[
+  { "input": "https://github.com/miladateight/KeyFix", "activeLanguage": "en", "expectedAction": "NoCorrection", "mustNotCorrect": true, "category": "url" },
+  { "input": "ateight088@gmail.com", "activeLanguage": "en", "expectedAction": "NoCorrection", "mustNotCorrect": true, "category": "email" },
+  { "input": "C:\\Users\\Milad\\file.txt", "activeLanguage": "en", "expectedAction": "NoCorrection", "mustNotCorrect": true, "category": "path" },
+  { "input": "--configuration", "activeLanguage": "en", "expectedAction": "NoCorrection", "mustNotCorrect": true, "category": "flag" },
+  { "input": "v0.7.0", "activeLanguage": "en", "expectedAction": "NoCorrection", "mustNotCorrect": true, "category": "version" },
+  { "input": "camelCase", "activeLanguage": "en", "expectedAction": "NoCorrection", "mustNotCorrect": true, "category": "identifier" },
+  { "input": "SCREAMING_SNAKE", "activeLanguage": "en", "expectedAction": "NoCorrection", "mustNotCorrect": true, "category": "identifier" },
+  { "input": ".NET", "activeLanguage": "en", "expectedAction": "NoCorrection", "mustNotCorrect": true, "category": "technical-token" }
+]

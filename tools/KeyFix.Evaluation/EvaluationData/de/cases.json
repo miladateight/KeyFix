@@ -1,0 +1,4 @@
+[
+  { "input": "und",     "activeLanguage": "de", "expectedAction": "NoCorrection", "category": "valid-word" },
+  { "input": "Straße",  "activeLanguage": "de", "expectedAction": "NoCorrection", "category": "valid-word" }
+]

@@ -64,4 +64,19 @@ public sealed class NormalizerTests
         var result = Normalizer.Normalize(LanguageKind.Persian, "سلام");
         Assert.False(result.ChangedDisplay);
     }
+
+    [Fact]
+    public void German_Lookup_Folds_Eszett_To_Ss()
+    {
+        // The embedded German word list only contains the "ss" spelling (no raw "ß" entries), so
+        // lookup must fold ß -> ss to find "straße" == "strasse". Display must stay untouched.
+        Assert.Equal("strasse", Normalizer.ToLookup(LanguageKind.German, "Straße"));
+        Assert.Equal("Straße", Normalizer.ToDisplay(LanguageKind.German, "Straße"));
+    }
+
+    [Fact]
+    public void German_Lookup_Without_Eszett_Is_Unaffected()
+    {
+        Assert.Equal("strasse", Normalizer.ToLookup(LanguageKind.German, "Strasse"));
+    }
 }

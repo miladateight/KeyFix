@@ -1,0 +1,9 @@
+[
+  { "input": "teh",     "activeLanguage": "en", "previousToken": "read", "expectedAction": "SpellingCorrection", "expectedReplacement": "the",     "category": "transposition" },
+  { "input": "recieve", "activeLanguage": "en", "expectedAction": "SpellingCorrection", "expectedReplacement": "receive", "category": "transposition" },
+  { "input": "wierd",   "activeLanguage": "en", "expectedAction": "SpellingCorrection", "expectedReplacement": "weird",   "category": "transposition" },
+  { "input": "freind",  "activeLanguage": "en", "expectedAction": "SpellingCorrection", "expectedReplacement": "friend",  "category": "transposition" },
+  { "input": "man",     "activeLanguage": "en", "expectedAction": "NoCorrection", "category": "valid-word" },
+  { "input": "the",     "activeLanguage": "en", "expectedAction": "NoCorrection", "category": "valid-word" },
+  { "input": "hello",   "activeLanguage": "en", "expectedAction": "NoCorrection", "category": "valid-word" }
+]

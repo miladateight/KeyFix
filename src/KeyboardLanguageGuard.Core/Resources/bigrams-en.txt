@@ -1,0 +1,26 @@
+# Seed English word bigrams: "previous current count". Lookup form (lowercase), space separated.
+# This is a small, reviewed seed asset that demonstrates context-aware scoring; it can be
+# regenerated/expanded by the data pipeline. '#' lines are comments.
+in the 5200
+of the 6100
+to the 4000
+on the 2000
+at the 1500
+for the 1800
+and the 2200
+is the 1200
+all the 900
+read the 900
+read a 300
+have a 1200
+i am 3000
+you are 2500
+we are 1500
+they are 1400
+he is 1300
+she is 1200
+it is 2600
+such as 500
+a lot 700
+of course 600
+in fact 400

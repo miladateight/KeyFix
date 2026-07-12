@@ -1,0 +1,2 @@
+# Reviewed German typo contaminants removed from the frequency dictionary at load time.
+# One lookup-form word per line; '#' = comment. Keep conservative.

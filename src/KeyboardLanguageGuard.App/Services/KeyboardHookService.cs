@@ -31,6 +31,19 @@ public sealed class KeyboardHookService : IDisposable
 
     public event EventHandler? BreakKeyPressed;
 
+    /// <summary>
+    /// Raised instead of <see cref="BackspacePressed"/> when <see cref="BackspaceShouldUndo"/> reports
+    /// that a pending correction should be undone. The Backspace keystroke is swallowed so it does not
+    /// also delete a character in the target app.
+    /// </summary>
+    public event EventHandler? UndoRequested;
+
+    /// <summary>
+    /// Cheap, synchronous predicate consulted inside the hook: return true to swallow the next
+    /// Backspace and raise <see cref="UndoRequested"/> instead. Keep it allocation-free and fast.
+    /// </summary>
+    public Func<bool>? BackspaceShouldUndo { get; set; }
+
     public int LastStartError { get; private set; }
 
     public bool Start()
@@ -75,32 +88,43 @@ public sealed class KeyboardHookService : IDisposable
             KbdLlHookStruct hook = Marshal.PtrToStructure<KbdLlHookStruct>(lParam);
             if ((hook.Flags & LlkHfInjected) != 0)
             {
+                // Never treat our own injected corrections/undo as user input.
                 return CallNextHookEx(_hook, nCode, wParam, lParam);
             }
 
-            HandleVirtualKey((int)hook.VkCode);
+            if (HandleVirtualKey((int)hook.VkCode))
+            {
+                return (IntPtr)1; // swallow the key (used to consume Backspace for undo)
+            }
         }
 
         return CallNextHookEx(_hook, nCode, wParam, lParam);
     }
 
-    private void HandleVirtualKey(int virtualKey)
+    /// <summary>Returns true when the key should be swallowed (not passed to the target app).</summary>
+    private bool HandleVirtualKey(int virtualKey)
     {
         if (virtualKey == VkBack)
         {
+            if (BackspaceShouldUndo?.Invoke() == true)
+            {
+                UndoRequested?.Invoke(this, EventArgs.Empty);
+                return true;
+            }
+
             BackspacePressed?.Invoke(this, EventArgs.Empty);
-            return;
+            return false;
         }
 
         if (virtualKey is VkReturn or VkTab)
         {
             BreakKeyPressed?.Invoke(this, EventArgs.Empty);
-            return;
+            return false;
         }
 
         if (IsModifierDown(VkControl) || IsModifierDown(VkMenu))
         {
-            return;
+            return false;
         }
 
         char? character = TryTranslateVirtualKey(virtualKey);
@@ -108,6 +132,8 @@ public sealed class KeyboardHookService : IDisposable
         {
             CharacterTyped?.Invoke(this, character.Value);
         }
+
+        return false;
     }
 
     private char? TryTranslateVirtualKey(int virtualKey)

@@ -15,8 +15,9 @@
     <Description>Windows tray app that detects likely wrong keyboard layout while typing.</Description>
     <PackageProjectUrl>https://github.com/miladateight/KeyFix</PackageProjectUrl>
     <RepositoryUrl>https://github.com/miladateight/KeyFix</RepositoryUrl>
-    <FileVersion>0.6.0.0</FileVersion>
-    <AssemblyVersion>0.6.0.0</AssemblyVersion>
+    <Version>0.7.0</Version>
+    <FileVersion>0.7.0.0</FileVersion>
+    <AssemblyVersion>0.7.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

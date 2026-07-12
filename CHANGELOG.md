@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.7.0 - 2026-07-12
+
+### Intelligence completion
+- **Undo**: pressing `Backspace` immediately after an automatic correction now reverses it, restores the original token (and the previous keyboard layout for layout corrections), and records the reversal as a rejection for learning. Undo state is minimal, short-lived, bound to the same window/input context, and expires on unrelated typing, focus change, Enter/Tab, or timeout.
+- **Personal learning** (local, private): KeyFix aggregates how you react to specific corrections and adjusts confidence within a safe band — repeatedly undone corrections are suppressed, repeatedly accepted ones are gently reinforced. Only normalized tokens and counts are stored (never sentences) in `%APPDATA%\KeyFix\learning.json`. It never overrides protected-context rules or the ambiguity margin. Resettable per language or entirely.
+- **Offline bigram model**: an `IBigramLanguageModel` contributes context to spelling scoring using the previous/next token. Ships a small, reviewed English seed asset; other languages operate gracefully without one. Context never overrides protected-token or ambiguity policies.
+- **Persian intelligence**: rule-based half-space reconstruction (e.g. `میخوام → می‌خوام`, `کتابها → کتاب‌ها`, `خانهام → خانه‌ام`) that never splits a real word, plus a new `PersianCorrectionStyle` setting (`PreserveUserStyle` (default) / `Conversational` / `Formal`). Pure half-space insertions can auto-apply; formal letter changes are offered as suggestions.
+
+### Diagnostics, quality & tooling
+- **Diagnostic logging** (opt-in, off by default): local, rotating, size-capped logs of safe structured metadata only (buckets, lengths, reason codes) — never raw text.
+- **Dictionary cleaning**: reviewed typo-contaminant blacklist removed at load (e.g. `teh`, `thier`, `alot`), so `teh → the` is now corrected. Added `scripts/validate-wordlists.ps1` producing a counts/checksum report.
+- **Evaluation harness** (`tools/KeyFix.Evaluation`): runs the engine over a labeled corpus under `tools/KeyFix.Evaluation/EvaluationData` and reports precision/recall/F1/latency. Dev-only; not shipped.
+- **Benchmarks** (`tools/KeyFix.Benchmarks`): dependency-free timing/allocation micro-benchmarks. Dev-only; not shipped.
+
+### Settings & UI
+- New settings: `EnableDiagnosticLogging`, `PersianCorrectionStyle`; added UI toggles for Undo, personal learning, diagnostic logging, and Persian style.
+- Settings schema bumped to version 8. Migration preserves existing choices and adds only safe defaults (logging off, `PreserveUserStyle`).
+
+### Tests
+- Test suite expanded from 133 to over 180, including learning, undo, bigram, diagnostics, Persian morphology, dictionary-cleaning regression, and settings-migration tests.
+
 ## 0.6.0 - 2026-07-12
 
 ### Correction engine

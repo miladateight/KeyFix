@@ -8,7 +8,7 @@ namespace KeyboardLanguageGuard.Core.Settings;
 public sealed class AppSettings
 {
     /// <summary>Current schema version. Bump this and add a migration branch when fields change.</summary>
-    public const int CurrentSettingsVersion = 7;
+    public const int CurrentSettingsVersion = 8;
 
     public int SettingsVersion { get; set; } = CurrentSettingsVersion;
 
@@ -66,10 +66,19 @@ public sealed class AppSettings
     /// <summary>Offer orthographic normalization suggestions (e.g. Arabic Yeh/Kaf → Persian).</summary>
     public bool EnableNormalizationSuggestions { get; set; }
 
-    /// <summary>Reserved for local learning from accepted/rejected corrections.</summary>
+    /// <summary>
+    /// Locally learn from accepted/rejected/undone corrections and nudge future confidence within a
+    /// safe band. Stores only normalized tokens and counts under <c>%APPDATA%\KeyFix\learning.json</c>,
+    /// never raw sentences. Can suppress a repeatedly-rejected correction but never manufactures
+    /// confidence for an otherwise weak candidate.
+    /// </summary>
     public bool EnablePersonalLearning { get; set; } = true;
 
-    /// <summary>Reserved for one-step undo of an applied correction.</summary>
+    /// <summary>
+    /// Allow reversing the most recent automatic correction by pressing Backspace immediately
+    /// after it. The undo window is short-lived, bound to the same window/input context, and
+    /// expires on unrelated typing, focus change, Enter/Tab, or timeout.
+    /// </summary>
     public bool EnableUndo { get; set; } = true;
 
     /// <summary>How eager auto-correction is. Defaults to the safest option.</summary>
@@ -77,6 +86,14 @@ public sealed class AppSettings
 
     /// <summary>Show a tray notification when a correction is applied.</summary>
     public bool ShowCorrectionNotification { get; set; } = true;
+
+    // --- 0.7.0 correction engine settings ---------------------------------------------------
+
+    /// <summary>How Persian corrections treat conversational vs. formal forms. Defaults to preserving the user's style.</summary>
+    public PersianCorrectionStyle PersianCorrectionStyle { get; set; } = PersianCorrectionStyle.PreserveUserStyle;
+
+    /// <summary>Opt-in local diagnostic logging of safe, structured metadata (never raw text). Off by default.</summary>
+    public bool EnableDiagnosticLogging { get; set; }
 
     public List<LanguageProfile> Languages { get; set; } = new()
     {

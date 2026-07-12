@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <Version>0.7.0</Version>
+    <FileVersion>0.7.0.0</FileVersion>
+    <AssemblyVersion>0.7.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -8,6 +11,11 @@
     <EmbeddedResource Include="Resources\words-en.txt" />
     <EmbeddedResource Include="Resources\words-de.txt" />
     <EmbeddedResource Include="Resources\words-ar.txt" />
+    <EmbeddedResource Include="Resources\typos-fa.txt" />
+    <EmbeddedResource Include="Resources\typos-en.txt" />
+    <EmbeddedResource Include="Resources\typos-de.txt" />
+    <EmbeddedResource Include="Resources\typos-ar.txt" />
+    <EmbeddedResource Include="Resources\bigrams-en.txt" />
   </ItemGroup>
 </Project>
 

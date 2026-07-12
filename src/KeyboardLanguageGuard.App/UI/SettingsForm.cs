@@ -17,8 +17,12 @@ public sealed class SettingsForm : Form
     private readonly CheckBox _enableWrongLayoutDetection = new() { Text = "Fix typing done with the wrong keyboard language", AutoSize = true };
     private readonly CheckBox _enableSpellingDetection = new() { Text = "Fix ordinary spelling mistakes (same language)", AutoSize = true };
     private readonly CheckBox _enableSpellingAutoCorrection = new() { Text = "Apply spelling fixes automatically (otherwise only suggest)", AutoSize = true };
-    private readonly CheckBox _enableNormalizationSuggestions = new() { Text = "Suggest letter normalization (e.g. Arabic → Persian ی/ک)", AutoSize = true };
+    private readonly CheckBox _enableNormalizationSuggestions = new() { Text = "Suggest letter/half-space normalization (e.g. Arabic → Persian ی/ک, میخوام → می‌خوام)", AutoSize = true };
+    private readonly CheckBox _enableUndo = new() { Text = "Undo an automatic correction by pressing Backspace right after it", AutoSize = true };
+    private readonly CheckBox _enablePersonalLearning = new() { Text = "Learn from my accepted and undone corrections (stored locally)", AutoSize = true };
+    private readonly CheckBox _enableDiagnosticLogging = new() { Text = "Write local diagnostic logs (metadata only, never your text)", AutoSize = true };
     private readonly ComboBox _aggressiveness = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _persianStyle = new() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly CheckBox _launchAtStartup = new() { Text = "Start KeyFix when Windows starts", AutoSize = true };
     private readonly TextBox _soundPath = new() { Width = 390 };
     private readonly TextBox _excludedProcesses = new() { Multiline = true, ScrollBars = ScrollBars.Vertical, Height = 90, Width = 480 };
@@ -33,11 +37,12 @@ public sealed class SettingsForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        ClientSize = new Size(590, 760);
+        ClientSize = new Size(590, 880);
         Font = new Font("Segoe UI", 9F);
 
         _mode.Items.AddRange(Enum.GetNames<DetectionMode>());
         _aggressiveness.Items.AddRange(Enum.GetNames<CorrectionAggressiveness>());
+        _persianStyle.Items.AddRange(Enum.GetNames<PersianCorrectionStyle>());
 
         BuildLayout();
         LoadSettings();
@@ -81,9 +86,13 @@ public sealed class SettingsForm : Form
             _enableWrongLayoutDetection,
             _enableSpellingDetection,
             _enableSpellingAutoCorrection,
-            _enableNormalizationSuggestions
+            _enableNormalizationSuggestions,
+            _enableUndo,
+            _enablePersonalLearning,
+            _enableDiagnosticLogging
         ]);
         correctionsPanel.Controls.Add(Field("How eager", _aggressiveness));
+        correctionsPanel.Controls.Add(Field("Persian style", _persianStyle));
         corrections.Controls.Add(correctionsPanel);
 
         root.Controls.Add(intro);
@@ -170,6 +179,10 @@ public sealed class SettingsForm : Form
         _enableSpellingDetection.Checked = Settings.EnableSpellingDetection;
         _enableSpellingAutoCorrection.Checked = Settings.EnableSpellingAutoCorrection;
         _enableNormalizationSuggestions.Checked = Settings.EnableNormalizationSuggestions;
+        _enableUndo.Checked = Settings.EnableUndo;
+        _enablePersonalLearning.Checked = Settings.EnablePersonalLearning;
+        _enableDiagnosticLogging.Checked = Settings.EnableDiagnosticLogging;
+        _persianStyle.SelectedItem = Settings.PersianCorrectionStyle.ToString();
         _launchAtStartup.Checked = Settings.LaunchAtStartup;
         _soundPath.Text = Settings.CustomSoundPath ?? string.Empty;
         _excludedProcesses.Text = string.Join(Environment.NewLine, Settings.ExcludedProcesses);
@@ -200,6 +213,11 @@ public sealed class SettingsForm : Form
         Settings.EnableSpellingDetection = _enableSpellingDetection.Checked;
         Settings.EnableSpellingAutoCorrection = _enableSpellingAutoCorrection.Checked;
         Settings.EnableNormalizationSuggestions = _enableNormalizationSuggestions.Checked;
+        Settings.EnableUndo = _enableUndo.Checked;
+        Settings.EnablePersonalLearning = _enablePersonalLearning.Checked;
+        Settings.EnableDiagnosticLogging = _enableDiagnosticLogging.Checked;
+        Settings.PersianCorrectionStyle = Enum.Parse<PersianCorrectionStyle>(
+            _persianStyle.SelectedItem?.ToString() ?? nameof(PersianCorrectionStyle.PreserveUserStyle));
         Settings.LaunchAtStartup = _launchAtStartup.Checked;
         Settings.CustomSoundPath = string.IsNullOrWhiteSpace(_soundPath.Text) ? null : _soundPath.Text.Trim();
         Settings.ExcludedProcesses = _excludedProcesses.Text
@@ -241,7 +259,9 @@ public sealed class SettingsForm : Form
             EnableNormalizationSuggestions = settings.EnableNormalizationSuggestions,
             EnablePersonalLearning = settings.EnablePersonalLearning,
             EnableUndo = settings.EnableUndo,
+            EnableDiagnosticLogging = settings.EnableDiagnosticLogging,
             CorrectionAggressiveness = settings.CorrectionAggressiveness,
+            PersianCorrectionStyle = settings.PersianCorrectionStyle,
             ShowCorrectionNotification = settings.ShowCorrectionNotification,
             Languages = settings.Languages
                 .Select(item => new LanguageProfile { Language = item.Language, Enabled = item.Enabled })

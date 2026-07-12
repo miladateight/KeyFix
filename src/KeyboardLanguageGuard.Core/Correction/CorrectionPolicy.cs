@@ -26,6 +26,13 @@ public sealed class CorrectionPolicy
     public double EditDistance1Penalty => 14;
     public double EditDistancePenaltyPerStep => 17;
 
+    /// <summary>Maximum bonus a strong bigram context match can add to a candidate's score.</summary>
+    public double ContextWeight => 10;
+
+    /// <summary>Confidence multiplier applied by personal learning, clamped to a safe band.</summary>
+    public double LearningMaxBonus => 8;
+    public double LearningMaxPenalty => 40;
+
     public static CorrectionPolicy For(CorrectionAggressiveness aggressiveness) => aggressiveness switch
     {
         CorrectionAggressiveness.Aggressive => new CorrectionPolicy

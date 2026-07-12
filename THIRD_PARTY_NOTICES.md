@@ -32,6 +32,13 @@ python scripts/extract_wordfreq.py --target 30000
 Regeneration requires network access to the source repositories above. Normal application builds do
 **not** require network access — the generated lists are committed to the repository.
 
+## Bigram context asset
+
+`src/KeyboardLanguageGuard.Core/Resources/bigrams-en.txt` is a small, hand-authored list of common
+English word pairs with illustrative counts, written by the project — not derived from any
+third-party corpus. It is original work under the same MIT license as the repository. See
+`data/sources.json` for the manifest entry. Persian, Arabic, and German have no bigram asset yet.
+
 ## Test framework
 
 - xUnit (https://xunit.net) — Apache-2.0. Test-only; not shipped in the application.

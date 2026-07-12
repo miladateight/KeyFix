@@ -1,6 +1,8 @@
 using KeyboardLanguageGuard.Core.Detection;
 using KeyboardLanguageGuard.Core.Dictionaries;
+using KeyboardLanguageGuard.Core.Language;
 using KeyboardLanguageGuard.Core.Layout;
+using KeyboardLanguageGuard.Core.Learning;
 using KeyboardLanguageGuard.Core.Settings;
 using KeyboardLanguageGuard.Core.Spelling;
 using KeyboardLanguageGuard.Core.Text;
@@ -21,23 +23,36 @@ public sealed class CorrectionDecisionEngine
     private readonly IFrequencyDictionary _dictionary;
     private readonly LanguageDetector _detector;
     private readonly SpellingCandidateGenerator _spelling;
+    private readonly IBigramLanguageModel _bigram;
+    private ICorrectionMemory _memory;
 
     public CorrectionDecisionEngine() : this(new FrequencyDictionary(), new KeyboardLayoutTransformer()) { }
 
-    public CorrectionDecisionEngine(IFrequencyDictionary dictionary, IKeyboardLayoutTransformer transformer)
+    public CorrectionDecisionEngine(
+        IFrequencyDictionary dictionary,
+        IKeyboardLayoutTransformer transformer,
+        IBigramLanguageModel? bigram = null,
+        ICorrectionMemory? memory = null)
     {
         _dictionary = dictionary;
         _detector = new LanguageDetector(dictionary, transformer);
         _spelling = new SpellingCandidateGenerator(dictionary);
+        _bigram = bigram ?? new FrequencyBigramModel();
+        _memory = memory ?? NullCorrectionMemory.Instance;
     }
+
+    /// <summary>Swap the personal-learning memory (e.g. when the user toggles the setting).</summary>
+    public void SetMemory(ICorrectionMemory memory) => _memory = memory ?? NullCorrectionMemory.Instance;
 
     /// <summary>Recent-language context (used to bias the wrong-layout path). Exposed for the app shell.</summary>
     public LanguageContext LayoutContext => _detector.Context;
 
+    private static string StripZwnj(string value) => value.Replace("‌", string.Empty);
+
     /// <summary>Pre-build the spelling index for a language so the first real correction is not slow.</summary>
     public void WarmupSpelling(LanguageKind language) => _spelling.Warmup(language);
 
-    public CorrectionDecision Decide(string observed, LanguageKind activeLanguage, AppSettings settings, IUserDictionary? userDictionary = null)
+    public CorrectionDecision Decide(string observed, LanguageKind activeLanguage, AppSettings settings, IUserDictionary? userDictionary = null, string? previousToken = null)
     {
         if (string.IsNullOrWhiteSpace(observed) || !settings.IsLanguageEnabled(activeLanguage))
         {
@@ -100,21 +115,51 @@ public sealed class CorrectionDecisionEngine
 
         bool originalValid = userKnown || (lookup.Length >= 2 && _dictionary.Contains(activeLanguage, lookup));
 
-        // 2. Spelling path (same active layout).
+        // 2. Spelling path (same active layout). A real correction wins immediately; a "considered
+        // but rejected" result (e.g. too low confidence) is remembered but must not block
+        // normalization below from getting its own chance at the same token.
+        CorrectionDecision? spellingAttempt = null;
         if (options.EnableSpellingDetection && !originalValid && lookup.Length >= MinimumWordLength)
         {
-            CorrectionDecision spelling = DecideSpelling(observed, lookup, activeLanguage, settings, options);
-            if (spelling.IsCorrection || spelling.Reason != ReasonCode.NoCandidate)
+            CorrectionDecision spelling = DecideSpelling(observed, lookup, activeLanguage, settings, options, previousToken);
+            if (spelling.IsCorrection)
             {
                 return spelling;
+            }
+
+            if (spelling.Reason != ReasonCode.NoCandidate)
+            {
+                spellingAttempt = spelling;
             }
         }
 
         // 3. Normalization suggestion (orthographic only).
-        if (options.EnableNormalizationSuggestions && norm.ChangedDisplay)
+        if (options.EnableNormalizationSuggestions)
         {
-            string displayLookup = Normalizer.ToLookup(activeLanguage, norm.DisplayForm);
-            if (_dictionary.Contains(activeLanguage, displayLookup))
+            // 3a. Persian half-space / style reconstruction (e.g. میخوام → می‌خوام, کتابها → کتاب‌ها).
+            if (activeLanguage == LanguageKind.Persian &&
+                PersianMorphology.TryReconstruct(observed, _dictionary, settings.PersianCorrectionStyle, out string reconstructed) &&
+                !string.Equals(reconstructed, observed, StringComparison.Ordinal))
+            {
+                // Only a pure half-space insertion (no letters changed) is safe to auto-apply;
+                // a formal-style letter change is offered as a suggestion.
+                bool pureSpacing = StripZwnj(reconstructed) == StripZwnj(observed);
+                return new CorrectionDecision
+                {
+                    Type = CorrectionType.Normalization,
+                    Reason = ReasonCode.NormalizationApplied,
+                    ObservedText = observed,
+                    ReplacementText = reconstructed,
+                    SuggestedLanguage = activeLanguage,
+                    CharactersToReplace = observed.Length,
+                    Confidence = pureSpacing ? 0.95 : 0.85,
+                    AmbiguityMargin = 100,
+                    CanAutoApply = pureSpacing
+                };
+            }
+
+            // 3b. Generic letter normalization (e.g. Arabic Yeh/Kaf → Persian) to a known word.
+            if (norm.ChangedDisplay && _dictionary.Contains(activeLanguage, Normalizer.ToLookup(activeLanguage, norm.DisplayForm)))
             {
                 return new CorrectionDecision
                 {
@@ -126,15 +171,20 @@ public sealed class CorrectionDecisionEngine
                     CharactersToReplace = observed.Length,
                     Confidence = 0.9,
                     AmbiguityMargin = 100,
-                    CanAutoApply = false // normalization is offered as a suggestion, not applied silently
+                    CanAutoApply = false // letter normalization is offered as a suggestion, not applied silently
                 };
             }
+        }
+
+        if (spellingAttempt is not null)
+        {
+            return spellingAttempt;
         }
 
         return CorrectionDecision.None(originalValid ? ReasonCode.OriginalWordValid : ReasonCode.NoCandidate);
     }
 
-    private CorrectionDecision DecideSpelling(string observed, string lookup, LanguageKind activeLanguage, AppSettings settings, CorrectionOptions options)
+    private CorrectionDecision DecideSpelling(string observed, string lookup, LanguageKind activeLanguage, AppSettings settings, CorrectionOptions options, string? previousToken)
     {
         CorrectionInput input = new()
         {
@@ -142,11 +192,12 @@ public sealed class CorrectionDecisionEngine
             LookupForm = lookup,
             ActiveLanguage = activeLanguage,
             EnabledLanguages = settings.Languages.Where(l => l.Enabled).Select(l => l.Language).ToList(),
-            Kind = TokenKind.Word
+            Kind = TokenKind.Word,
+            PreviousToken = previousToken
         };
 
         CorrectionPolicy policy = CorrectionPolicy.For(options.Aggressiveness);
-        CandidateScorer scorer = new(policy);
+        CandidateScorer scorer = new(policy, _bigram, _memory);
 
         List<CorrectionCandidate> candidates = _spelling.Generate(input).ToList();
         if (candidates.Count == 0)

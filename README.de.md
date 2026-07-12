@@ -48,18 +48,23 @@ Zusätzlich kann KeyFix auch gewöhnliche Rechtschreibfehler beheben (wenn das T
 
 Wichtig: Öffne nach der Installation die **Settings** und lasse nur die Sprachen aktiviert, die du wirklich verwendest. Deaktiviere den Rest. Das verbessert die Erkennungsgenauigkeit und reduziert unnötige Korrekturen.
 
-## Funktionen in 0.6.0
+## Funktionen
 
 - Windows-System-Tray-App mit kompaktem Einstellungsfenster
 - Ersteinrichtung zur Auswahl der tatsächlich genutzten Sprachen
 - Sprachen einzeln aktivieren oder deaktivieren
 - Drei Erkennungsmodi: `AlertOnly`, `AlertAndSuggest` und `AutoSwitch`
 - Korrektur des vorherigen Wortes nach der Leertaste (nicht während des Tippens)
+- **Rückgängig machen**: direkt nach einer automatischen Korrektur einfach Backspace drücken, um sie umzukehren
+- **Lokales Lernen**, das sich an deine akzeptierten und rückgängig gemachten Korrekturen anpasst
 - Erkennung auf Basis häufigkeitssortierter Wortlisten für alle vier Sprachen
 - Optionale, offline arbeitende Rechtschreibkorrektur (SymSpell-artiger Index), **standardmäßig aus**
+- Ein offline arbeitendes Bigram-Kontextmodell, das dem Scoring hilft, das zum Umfeld passende Wort zu bevorzugen (bisher für Englisch)
 - Zurückhaltende Entscheidungslogik mit Mehrdeutigkeits-Marge und Regler `Conservative`/`Balanced`/`Aggressive`
 - Erkennung geschützter Tokens (URLs, E-Mails, Pfade, Versionen, Code-Bezeichner usw.) gegen Fehlkorrekturen
 - Lokales, privates persönliches Wörterbuch mit Import/Export und optionalen Ersetzungspaaren
+- Rekonstruktion des persischen Halb-Leerzeichens (ZWNJ) mit einstellbarem Schreibstil (umgangssprachlich/formell)
+- Optionales lokales Diagnose-Log (standardmäßig aus; nur Metadaten, nie dein getippter Text)
 - Schnelle Unicode-Textersetzung mit abgesichertem Zwischenablage-Fallback
 - Optionaler Start mit Windows
 - Standard-Warnton von Windows und optionaler eigener `.wav`-Ton
@@ -109,9 +114,17 @@ Vorschlag: receive
 
 Der Puffer wird nach Enter, Tab, nicht unterstützten Layouts, ausgeschlossenen Apps und automatischer Korrektur gelöscht.
 
+## Rückgängig machen
+
+Automatische Korrekturen sind nicht endgültig. Drücke direkt danach **Backspace**, und KeyFix stellt genau das ursprüngliche Wort wieder her — bei Korrekturen der Tastatursprache auch das vorherige Layout. Das Zeitfenster dafür ist kurz und an dasselbe Fenster und denselben Tipp-Kontext gebunden: Es schließt sich, sobald du etwas anderes tippst, den Fokus wechselst, Enter/Tab drückst oder eine kurze Zeitspanne verstreicht. Das Rückgängigmachen einer Korrektur wird für das lokale Lernen zugleich als Ablehnung gewertet. Dafür wird kein Satz gespeichert — nur die beiden betroffenen Wörter und ein paar kurzlebige Kennungen.
+
+## Lokales Lernen
+
+KeyFix kann lokal daraus lernen, wie du mit Korrekturen umgehst: Das Akzeptieren einer automatischen Korrektur verstärkt sie leicht, das Rückgängigmachen schwächt sie leicht ab — beides innerhalb eines sicheren, begrenzten Bereichs. Eine Korrektur, die du wiederholt rückgängig machst, wird irgendwann nicht mehr automatisch angewendet. Das überschreibt nie die Regeln für geschützte Tokens und erzeugt nie Vertrauen für einen Kandidaten, der die Mehrdeutigkeits-Prüfung ohnehin nicht besteht. Gespeichert werden lokal nur normalisierte Wörter und kleine Zähler — niemals vollständige Sätze — und du kannst jederzeit in den Settings zurücksetzen, was KeyFix gelernt hat (vollständig oder nur für eine Sprache).
+
 ## Geschützte Tokens
 
-Um Fehlkorrekturen zu vermeiden, korrigiert KeyFix nichts, was kein gewöhnliches Wort ist. Geschützte Tokens umfassen URLs, E-Mail-Adressen, Dateipfade, Kommandozeilen-Optionen (`--configuration`), Versionsnummern (`v0.6.0`), Domains, Hashtags, Erwähnungen, Code-Bezeichner (`camelCase`, `PascalCase`, `snake_case`, `SCREAMING_SNAKE`), Akronyme, Zahlen, gemischte alphanumerische Tokens und Emojis. Terminals und Passwort-Manager werden zudem über die Ausschlussliste vollständig ausgenommen.
+Um Fehlkorrekturen zu vermeiden, korrigiert KeyFix nichts, was kein gewöhnliches Wort ist. Geschützte Tokens umfassen URLs, E-Mail-Adressen, Dateipfade, Kommandozeilen-Optionen (`--configuration`), Versionsnummern (`v0.7.0`), Domains, Hashtags, Erwähnungen, Code-Bezeichner (`camelCase`, `PascalCase`, `snake_case`, `SCREAMING_SNAKE`), Akronyme, Zahlen, gemischte alphanumerische Tokens und Emojis. Terminals und Passwort-Manager werden zudem über die Ausschlussliste vollständig ausgenommen.
 
 ## Persönliches Wörterbuch
 
@@ -133,12 +146,26 @@ Eine einzige Einstellung „How eager" steuert, wie sicher KeyFix sein muss, bev
 
 Automatische Korrektur verlangt stets, dass der beste Kandidat die Schwelle überschreitet **und** den zweitbesten mit klarem Abstand schlägt, sodass mehrdeutige Fälle nie automatisch korrigiert werden.
 
+## Persischer Korrekturstil
+
+Die Rekonstruktion des Halb-Leerzeichens (ZWNJ) korrigiert die Worttrennung an bekannten Wortgrenzen — z. B. `میخوام → می‌خوام`, `کتابها → کتاب‌ها`, `خانهام → خانه‌ام` — ohne jemals versehentlich ein gebräuchliches Wort zu zerteilen. Eine Einstellung **Persischer Stil** steuert, ob Verbformen zusätzlich Richtung Hochsprache angeglichen werden:
+
+| Stil | Verhalten |
+| --- | --- |
+| `PreserveUserStyle` | Korrigiert nur die Worttrennung; dein umgangssprachlicher oder formeller Wortlaut bleibt erhalten. Standard. |
+| `Conversational` | Bevorzugt umgangssprachliche Standardformen. |
+| `Formal` | Wandelt eine kleine, geprüfte Menge umgangssprachlicher Verbformen in die formelle Form um (z. B. `میخوام → می‌خواهم`). |
+
+## Diagnose-Log
+
+Zur Fehlersuche kann KeyFix optional lokale Log-Dateien schreiben, die nur die *Art* der Entscheidung beschreiben — Wortlänge, erkannte Schrift, Korrekturtyp, Vertrauens- und Mehrdeutigkeits-Kategorien, Verarbeitungsdauer — ohne jemals den Text selbst festzuhalten. Das ist **standardmäßig aus**. Logs rotieren automatisch, sind größenbegrenzt und lassen sich jederzeit in den Settings löschen.
+
 ## Installation
 
 Lade den neuesten Installer von der [GitHub-Releases-Seite](https://github.com/miladateight/KeyFix/releases/latest):
 
 ```text
-KeyFixSetup-0.6.0.exe
+KeyFixSetup-0.7.0.exe
 ```
 
 Nach der Installation:
@@ -158,8 +185,11 @@ KeyFix ist so gebaut, dass getippter Text nicht gespeichert wird.
 - Getippter Text wird nicht hochgeladen.
 - Es gibt keine Telemetrie, kein Analyse-SDK und keinen Remote-Server.
 - Für die Erkennung wird nur ein kurzer lokaler Speicherpuffer genutzt.
+- Der Undo-Zustand liegt nur im Arbeitsspeicher und wird bei Verwendung oder Ablauf sofort verworfen.
 - Einstellungen werden in `%APPDATA%\KeyFix\settings.json` gespeichert.
 - Das persönliche Wörterbuch wird lokal in `%APPDATA%\KeyFix\user-dictionary.json` gespeichert und nie hochgeladen.
+- Lokale Lerndaten (nur normalisierte Wörter und Zähler, nie vollständige Sätze) werden in `%APPDATA%\KeyFix\learning.json` gespeichert und nie hochgeladen.
+- Das Diagnose-Log ist standardmäßig aus; auch wenn aktiviert, wird nie getippter Text protokolliert.
 - Die Standard-Ausschlussliste enthält Passwort-Manager und Terminals.
 
 Mehr dazu in [PRIVACY.md](PRIVACY.md).
@@ -190,6 +220,20 @@ dotnet test .\KeyboardLanguageGuard.sln --configuration Release
 dotnet run --project .\src\KeyboardLanguageGuard.App\KeyboardLanguageGuard.App.csproj
 ```
 
+## Evaluierung und Benchmarks
+
+Zwei reine Entwicklerwerkzeuge (nicht im Installer enthalten) unterstützen die Arbeit an Qualität und Performance:
+
+```powershell
+# Precision/Recall/F1/Latenz gegen das gelabelte Korpus unter tools\KeyFix.Evaluation\EvaluationData
+dotnet run --project .\tools\KeyFix.Evaluation\KeyFix.Evaluation.csproj --configuration Release
+
+# Zeit- und Allokations-Mikrobenchmarks
+dotnet run --project .\tools\KeyFix.Benchmarks\KeyFix.Benchmarks.csproj --configuration Release
+```
+
+Das Evaluierungskorpus ist bewusst klein und reproduzierbar; die Ergebnisse spiegeln nur dieses Korpus wider, nicht eine allgemeine Genauigkeitsaussage für die reale Welt. Erweitere `tools\KeyFix.Evaluation\EvaluationData`, um es aussagekräftiger zu machen.
+
 ## Installer erstellen
 
 ```powershell
@@ -208,13 +252,17 @@ Der Setup-Assistent zeigt das AT8-Logo. App- und Installer-Icon verwenden das Ke
 
 ```text
 src/
-  KeyboardLanguageGuard.Core/   Korrekturlogik, Wörterbücher und Tastaturlayout-Maps
+  KeyboardLanguageGuard.Core/   Korrektur-Engine, Wörterbücher und Tastaturlayout-Maps
   KeyboardLanguageGuard.App/    Tray-App, Einstellungs-UI, Hooks und Korrekturdienste
 tests/
   KeyboardLanguageGuard.Tests/  xUnit-Testsuite
+tools/
+  KeyFix.Evaluation/             Offline-Evaluierungswerkzeug (nur Entwicklung, nicht im Installer)
+  KeyFix.Benchmarks/             Zeit-/Speicher-Benchmarks (nur Entwicklung, nicht im Installer)
 installer/                      Inno-Setup-Skript und -Dateien
 assets/                         Logos und Icons
-scripts/                        build-, publish- und package-Skripte
+scripts/                        build-, publish-, package- und Datenvalidierungs-Skripte
+data/                           Manifest der Datenquellen (data/sources.json)
 .github/                        GitHub-Actions-Workflows
 ```
 
@@ -229,13 +277,12 @@ scripts/                        build-, publish- und package-Skripte
 
 ## Roadmap
 
-Geplant für spätere Versionen (nicht in 0.6.0 enthalten):
+Geplant für spätere Versionen (noch nicht vorhanden):
 
-- Ein-Schritt-Rückgängig für eine automatische Korrektur
-- Lokales Lernen aus akzeptierten und abgelehnten Korrekturen
-- Ein leichtes Bigram-Kontextmodell für besseres Scoring
-- Ein diagnostischer Testbereich in der App und optionales lokales Diagnose-Log
-- Ein Offline-Evaluierungswerkzeug mit gemessener Precision/Recall
+- Ein stärkeres statistisches Kontextmodell (Trigram oder mehr) sowie Bigram-Datensätze für Persisch, Arabisch und Deutsch
+- Ein diagnostischer Testbereich in der App, der Kandidaten, Scores und Entscheidungsgründe für einen selbst getippten Beispieltext anzeigt
+- Ein größeres, statistisch aussagekräftigeres Evaluierungskorpus
+- Automatisierte Eingabetests gegen echte Windows-Anwendungen
 - Korrekturprofile pro Anwendung
 - Vollständig lokalisierte Einstellungs-UI
 - Code-Signierung des Installers

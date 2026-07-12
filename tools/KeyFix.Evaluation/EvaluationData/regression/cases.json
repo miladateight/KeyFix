@@ -1,0 +1,7 @@
+[
+  { "input": "اثممخ", "activeLanguage": "fa", "expectedAction": "LayoutCorrection", "expectedReplacement": "hello", "category": "wrong-layout" },
+  { "input": "sghl",  "activeLanguage": "en", "expectedAction": "LayoutCorrection", "expectedReplacement": "سلام",  "category": "wrong-layout" },
+  { "input": "teh",   "activeLanguage": "en", "expectedAction": "SpellingCorrection", "expectedReplacement": "the", "category": "typo-contaminant-fixed" },
+  { "input": "of",    "activeLanguage": "en", "expectedAction": "NoCorrection", "category": "two-letter-valid" },
+  { "input": "he",    "activeLanguage": "en", "expectedAction": "NoCorrection", "category": "two-letter-valid" }
+]

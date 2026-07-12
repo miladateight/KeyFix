@@ -38,6 +38,16 @@ public sealed class CorrectionDecisionEngineTests
         Assert.Equal(ReasonCode.OriginalWordValid, d.Reason);
     }
 
+    [Fact]
+    public void German_Eszett_Word_Is_Not_Flagged()
+    {
+        // Regression: "Straße" used to be treated as unknown (the dictionary only has "strasse")
+        // and produced a low-confidence spelling suggestion. The ß -> ss lookup fold fixes this.
+        AppSettings spelling = TestSettings.WithSpelling();
+        CorrectionDecision d = _engine.Decide("Straße", LanguageKind.German, spelling);
+        Assert.Equal(CorrectionType.NoCorrection, d.Type);
+    }
+
     // ---- Protected tokens (must-not-correct) --------------------------------------------------
 
     [Theory]

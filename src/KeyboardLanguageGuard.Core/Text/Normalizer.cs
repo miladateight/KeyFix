@@ -46,7 +46,19 @@ public static class Normalizer
         text = text.Trim();
         if (language is LanguageKind.English or LanguageKind.German)
         {
-            return FoldLatin(text).ToLowerInvariant();
+            string folded = FoldLatin(text).ToLowerInvariant();
+
+            // The embedded German word list only contains the "ss" spelling (no "ß" entries at
+            // all — a real gap in the source data), so fold ß -> ss for lookup only. This is also
+            // linguistically legitimate: ss is the standard substitute for ß (mandatory in
+            // Switzerland). The display form below is untouched, so a correction never rewrites
+            // a user's ß to ss unless they typed ss themselves.
+            if (language == LanguageKind.German && folded.Contains('ß'))
+            {
+                folded = folded.Replace("ß", "ss");
+            }
+
+            return folded;
         }
 
         StringBuilder builder = new(text.Length);

@@ -3,7 +3,9 @@ using System.Windows.Forms;
 using KeyboardLanguageGuard.App.Services;
 using KeyboardLanguageGuard.App.UI;
 using KeyboardLanguageGuard.Core.Correction;
+using KeyboardLanguageGuard.Core.Diagnostics;
 using KeyboardLanguageGuard.Core.Dictionaries;
+using KeyboardLanguageGuard.Core.Learning;
 using KeyboardLanguageGuard.Core.Settings;
 using KeyboardLanguageGuard.Core.Text;
 
@@ -15,6 +17,8 @@ public sealed class TrayApplicationContext : ApplicationContext
     private readonly KeyboardLayoutService _layoutService = new();
     private readonly CorrectionDecisionEngine _engine = new();
     private readonly UserDictionaryStore _userDictionaryStore = new();
+    private readonly CorrectionMemoryStore _memoryStore = new();
+    private readonly FileDiagnosticLog _diagnosticLog;
     private readonly TextRingBuffer _buffer = new();
     private readonly AlertService _alertService = new();
     private readonly TextCorrectionService _textCorrectionService = new();
@@ -23,10 +27,13 @@ public sealed class TrayApplicationContext : ApplicationContext
     private readonly NotifyIcon _notifyIcon;
     private readonly SynchronizationContext _uiContext;
     private UserDictionary _userDictionary;
+    private CorrectionMemory _memory = new();
+    private bool _memoryDirty;
     private AppSettings _settings;
     private bool _paused;
     private DateTimeOffset _lastAlert = DateTimeOffset.MinValue;
     private long _inputVersion;
+    private UndoState? _pendingUndo;
 
     public TrayApplicationContext(SettingsStore settingsStore)
     {
@@ -36,6 +43,9 @@ public sealed class TrayApplicationContext : ApplicationContext
         _settings.LaunchAtStartup = _startupService.IsEnabled();
         _paused = _settings.StartPaused;
         _userDictionary = _userDictionaryStore.Load();
+        _memory = _memoryStore.Load();
+        _engine.SetMemory(_settings.EnablePersonalLearning ? _memory : NullCorrectionMemory.Instance);
+        _diagnosticLog = new FileDiagnosticLog(_settings.EnableDiagnosticLogging);
         WarmupSpellingIfEnabled();
 
         _notifyIcon = new NotifyIcon
@@ -52,6 +62,8 @@ public sealed class TrayApplicationContext : ApplicationContext
         _hookService.CharacterTyped += OnCharacterTyped;
         _hookService.BackspacePressed += OnBackspacePressed;
         _hookService.BreakKeyPressed += OnBreakKeyPressed;
+        _hookService.UndoRequested += OnUndoRequested;
+        _hookService.BackspaceShouldUndo = ShouldUndoBackspace;
 
         if (!_settings.FirstRunCompleted && !ShowFirstRunSetup())
         {
@@ -74,6 +86,12 @@ public sealed class TrayApplicationContext : ApplicationContext
         if (disposing)
         {
             _hookService.Dispose();
+            if (_memoryDirty)
+            {
+                _memoryStore.Save(_memory);
+                _memoryDirty = false;
+            }
+
             _notifyIcon.Visible = false;
             _notifyIcon.Dispose();
         }
@@ -157,6 +175,15 @@ public sealed class TrayApplicationContext : ApplicationContext
             _settingsStore.Save(_settings);
             _startupService.SetEnabled(_settings.LaunchAtStartup);
             _buffer.Clear();
+            _pendingUndo = null;
+            _diagnosticLog.SetEnabled(_settings.EnableDiagnosticLogging);
+            _engine.SetMemory(_settings.EnablePersonalLearning ? _memory : NullCorrectionMemory.Instance);
+            if (_memoryDirty)
+            {
+                _memoryStore.Save(_memory);
+                _memoryDirty = false;
+            }
+
             WarmupSpellingIfEnabled();
         }
     }
@@ -164,6 +191,7 @@ public sealed class TrayApplicationContext : ApplicationContext
     private void OnCharacterTyped(object? sender, char character)
     {
         _inputVersion++;
+        _pendingUndo = null; // any real typing ends the undo window
         if (_paused)
         {
             _buffer.Clear();
@@ -201,6 +229,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         CorrectionRequest request = new(
             correctionScope,
             trailingWhitespace,
+            _buffer.PreviousToken,
             currentLanguage.Value,
             foregroundWindow,
             _inputVersion);
@@ -218,12 +247,14 @@ public sealed class TrayApplicationContext : ApplicationContext
     private void OnBackspacePressed(object? sender, EventArgs eventArgs)
     {
         _inputVersion++;
+        _pendingUndo = null; // a non-undo Backspace also ends the undo window
         _buffer.Backspace();
     }
 
     private void OnBreakKeyPressed(object? sender, EventArgs eventArgs)
     {
         _inputVersion++;
+        _pendingUndo = null;
         _buffer.Clear();
         _engine.LayoutContext.Clear();
     }
@@ -249,7 +280,11 @@ public sealed class TrayApplicationContext : ApplicationContext
             return;
         }
 
-        CorrectionDecision decision = _engine.Decide(request.Scope, request.CurrentLanguage, _settings, _userDictionary);
+        long startTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+        CorrectionDecision decision = _engine.Decide(request.Scope, request.CurrentLanguage, _settings, _userDictionary, request.PreviousToken);
+        double durationMs = System.Diagnostics.Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds;
+        LogDecision(request, decision, durationMs);
+
         if (!decision.IsCorrection)
         {
             // Record the current language as the user's intent so the context
@@ -274,6 +309,8 @@ public sealed class TrayApplicationContext : ApplicationContext
         if (_settings.Mode == DetectionMode.AutoSwitch && decision.CanAutoApply)
         {
             _buffer.Clear();
+            RememberForUndo(decision, request);
+            RecordLearningAccepted(decision);
             RunAutoFixOffUiThread(decision, request.TrailingWhitespace);
         }
 
@@ -341,6 +378,113 @@ public sealed class TrayApplicationContext : ApplicationContext
         return fixedText;
     }
 
+    private void LogDecision(CorrectionRequest request, CorrectionDecision decision, double durationMs)
+    {
+        if (!_diagnosticLog.IsEnabled)
+        {
+            return;
+        }
+
+        string script = Scripts.IsLatinLanguage(request.CurrentLanguage) ? "Latin" : "Arabic";
+        _diagnosticLog.Write(new DiagnosticEvent(
+            DateTime.UtcNow,
+            _layoutService.GetForegroundProcessName() ?? string.Empty,
+            request.Scope.Length,
+            script,
+            request.CurrentLanguage,
+            decision.IsCorrection ? 1 : 0,
+            decision.Type,
+            decision.Reason,
+            DiagnosticEvent.BucketFor(decision.Confidence),
+            DiagnosticEvent.BucketForMargin(decision.AmbiguityMargin),
+            durationMs));
+    }
+
+    private static readonly TimeSpan UndoTimeToLive = TimeSpan.FromSeconds(6);
+
+    private void RememberForUndo(CorrectionDecision decision, CorrectionRequest request)
+    {
+        if (!_settings.EnableUndo)
+        {
+            _pendingUndo = null;
+            return;
+        }
+
+        _pendingUndo = new UndoState
+        {
+            Type = decision.Type,
+            OriginalToken = decision.ObservedText,
+            ReplacementToken = decision.ReplacementText,
+            TrailingWhitespace = request.TrailingWhitespace,
+            OriginalLanguage = request.CurrentLanguage,
+            TargetLanguage = decision.SuggestedLanguage,
+            ForegroundWindow = request.ForegroundWindow.ToInt64(),
+            InputVersion = _inputVersion,
+            CreatedUtc = DateTime.UtcNow
+        };
+    }
+
+    private void RecordLearningAccepted(CorrectionDecision decision)
+    {
+        if (!_settings.EnablePersonalLearning || decision.Type == CorrectionType.LayoutCorrection)
+        {
+            return;
+        }
+
+        _memory.RecordAccepted(decision.SuggestedLanguage, decision.ObservedText, decision.ReplacementText);
+        _memoryDirty = true;
+    }
+
+    private bool ShouldUndoBackspace()
+    {
+        UndoState? undo = _pendingUndo;
+        if (undo is null || !_settings.EnableUndo)
+        {
+            return false;
+        }
+
+        long foreground = _layoutService.GetForegroundWindowHandle().ToInt64();
+        return undo.IsValid(foreground, _inputVersion, DateTime.UtcNow, UndoTimeToLive);
+    }
+
+    private void OnUndoRequested(object? sender, EventArgs eventArgs)
+    {
+        UndoState? undo = _pendingUndo;
+        _pendingUndo = null;
+        if (undo is null)
+        {
+            return;
+        }
+
+        // Any real input after this point starts a fresh context.
+        _inputVersion++;
+        _buffer.Clear();
+
+        // The user reversing an automatic correction is a rejection signal for learning.
+        if (_settings.EnablePersonalLearning && undo.Type != CorrectionType.LayoutCorrection)
+        {
+            _memory.RecordRejected(undo.TargetLanguage, undo.OriginalToken, undo.ReplacementToken);
+            _memoryDirty = true;
+        }
+
+        Thread worker = new(() => ApplyUndo(undo))
+        {
+            IsBackground = true,
+            Name = "KeyFixUndo"
+        };
+        worker.SetApartmentState(ApartmentState.STA);
+        worker.Start();
+    }
+
+    private void ApplyUndo(UndoState undo)
+    {
+        _textCorrectionService.ReplaceTextBeforeCursor(undo.CharactersToDelete, undo.RestoreText);
+        if (undo.RestoresLayout)
+        {
+            _layoutService.SwitchTo(undo.OriginalLanguage);
+        }
+    }
+
     private void WarmupSpellingIfEnabled()
     {
         if (!_settings.EnableSpellingDetection)
@@ -366,6 +510,7 @@ public sealed class TrayApplicationContext : ApplicationContext
     private readonly record struct CorrectionRequest(
         string Scope,
         string TrailingWhitespace,
+        string? PreviousToken,
         LanguageKind CurrentLanguage,
         IntPtr ForegroundWindow,
         long InputVersion);

@@ -1,0 +1,4 @@
+[
+  { "input": "meeting", "activeLanguage": "en", "expectedAction": "NoCorrection", "category": "technical-english-in-persian-context" },
+  { "input": "GitHub",  "activeLanguage": "en", "expectedAction": "NoCorrection", "category": "product-name" }
+]

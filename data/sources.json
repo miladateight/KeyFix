@@ -30,6 +30,17 @@
       "purpose": "frequency",
       "redistribution": true,
       "attribution_required": true
+    },
+    {
+      "language": ["en"],
+      "name": "KeyFix hand-authored bigram seed (src/KeyboardLanguageGuard.Core/Resources/bigrams-en.txt)",
+      "url": null,
+      "license": "original work, MIT (same as the repository)",
+      "version": "0.7.0",
+      "purpose": "bigram context scoring",
+      "redistribution": true,
+      "attribution_required": false,
+      "note": "Not derived from any third-party corpus — a small, manually written list of common English word pairs and rough counts, used only to demonstrate/enable context-aware scoring. Persian, Arabic, and German have no bigram asset yet; the model returns a neutral score for them."
     }
   ]
 }

@@ -56,11 +56,16 @@ Important: after installing KeyFix, open **Settings** and keep only the language
 - Three detection modes: `AlertOnly`, `AlertAndSuggest`, and `AutoSwitch`
 - Automatic correction of the previous mistyped word in `AutoSwitch` mode
 - Correction happens after Space, so KeyFix does not rewrite words while you are still typing
+- **Undo**: press Backspace right after an automatic correction to reverse it
+- **Local personal learning** that adapts confidence to your accepted and undone corrections
 - Dictionary-based detection using frequency-ordered word lists for English, Persian, Arabic, and German
 - Optional offline spelling auto-correction (SymSpell-style index; off by default)
+- An offline bigram context model that helps the scorer prefer the candidate that fits the surrounding words (English so far)
 - Conservative decision engine with an ambiguity margin and a Conservative/Balanced/Aggressive control
 - Protected-token detection (URLs, emails, paths, versions, code identifiers, and more) to avoid false positives
 - Local, private personal dictionary with import/export and optional replacement pairs
+- Persian half-space (ZWNJ) reconstruction with a configurable conversational/formal style
+- Optional local diagnostic logging (off by default; metadata only, never your typed text)
 - Fast Unicode text replacement, with a guarded clipboard fallback path
 - Optional launch at Windows startup
 - Built-in Windows alert sound
@@ -121,9 +126,17 @@ Suggested: receive
 
 KeyFix clears its buffer after Enter, Tab, unsupported layouts, excluded apps, and automatic correction.
 
+## Undo
+
+Automatic corrections are not final. Press **Backspace** immediately after one and KeyFix restores the exact original token — including the previous keyboard layout, for layout corrections — instead of deleting a character from your text. The undo window is short-lived and tied to the same window and typing context: it closes as soon as you type something else, switch focus, press Enter/Tab, or a short timeout passes. Undoing a correction is also treated as a rejection signal for local learning. No sentence is ever kept around to make this work — only the two tokens involved and a few identifiers.
+
+## Personal Learning
+
+KeyFix can locally learn from how you use corrections: accepting an automatic correction reinforces it slightly, and undoing one suppresses it, both within a safe, bounded range. A correction you keep undoing eventually stops applying automatically. This never overrides protected-token rules and never manufactures confidence for a candidate that fails the ambiguity check on its own. Only normalized tokens and small counters are stored locally — never full sentences — and you can reset what KeyFix has learned (entirely, or per language) at any time from Settings.
+
 ## Protected Tokens
 
-To avoid false positives, KeyFix never corrects anything that is not a plain word. Protected tokens include URLs, email addresses, file paths, command-line flags (`--configuration`), version numbers (`v0.6.0`), domains, hashtags, mentions, code identifiers (`camelCase`, `PascalCase`, `snake_case`, `SCREAMING_SNAKE`), acronyms, numbers, mixed alphanumerics, and emoji. Terminals, password managers, and other sensitive apps are excluded entirely via the foreground-app exclusion list.
+To avoid false positives, KeyFix never corrects anything that is not a plain word. Protected tokens include URLs, email addresses, file paths, command-line flags (`--configuration`), version numbers (`v0.7.0`), domains, hashtags, mentions, code identifiers (`camelCase`, `PascalCase`, `snake_case`, `SCREAMING_SNAKE`), acronyms, numbers, mixed alphanumerics, and emoji. Terminals, password managers, and other sensitive apps are excluded entirely via the foreground-app exclusion list.
 
 ## Personal Dictionary
 
@@ -145,12 +158,26 @@ A single **How eager** setting controls how confident KeyFix must be before it a
 
 Automatic correction always requires the best candidate to clear the confidence threshold **and** beat the runner-up by a clear margin, so ambiguous cases are never auto-applied.
 
+## Persian Correction Style
+
+Persian half-space (ZWNJ) reconstruction fixes spacing at known word boundaries — for example `میخوام → می‌خوام`, `کتابها → کتاب‌ها`, `خانهام → خانه‌ام` — without ever splitting a genuinely common word by mistake. A **Persian style** setting controls whether it also nudges verb forms toward a formal register:
+
+| Style | Behavior |
+| --- | --- |
+| `PreserveUserStyle` | Only fix spacing; keep your conversational or formal wording as typed. Default. |
+| `Conversational` | Prefer conversational canonical forms. |
+| `Formal` | Map a small, reviewed set of conversational verb forms to formal ones (e.g. `میخوام → می‌خواهم`). |
+
+## Diagnostic Logging
+
+For troubleshooting, KeyFix can optionally write local log files describing *what kind* of decision it made — token length, detected script, correction type, confidence and ambiguity buckets, processing time — without ever recording the text itself. This is **off by default**. Logs rotate automatically, are capped in size, and can be cleared from Settings at any time.
+
 ## Installation
 
 Download the latest installer from the [GitHub Releases page](https://github.com/miladateight/KeyFix/releases/latest):
 
 ```text
-KeyFixSetup-0.6.0.exe
+KeyFixSetup-0.7.0.exe
 ```
 
 After installing:
@@ -170,8 +197,11 @@ KeyFix is designed to avoid storing user text.
 - Typed text is not uploaded.
 - There is no telemetry, analytics SDK, or remote server.
 - Only a short local in-memory buffer is used for detection.
+- Undo state lives only in memory and is discarded as soon as it is used or expires.
 - Settings are stored in `%APPDATA%\KeyFix\settings.json`.
 - The personal dictionary is stored locally in `%APPDATA%\KeyFix\user-dictionary.json` and is never uploaded.
+- Local learning data (normalized tokens and counters only, never sentences) is stored in `%APPDATA%\KeyFix\learning.json` and is never uploaded.
+- Diagnostic logging is off by default; when enabled, it never records your typed text.
 - The default exclusion list includes password managers and terminals.
 
 Read more in [PRIVACY.md](PRIVACY.md).
@@ -202,6 +232,20 @@ dotnet test .\KeyboardLanguageGuard.sln --configuration Release
 dotnet run --project .\src\KeyboardLanguageGuard.App\KeyboardLanguageGuard.App.csproj
 ```
 
+## Evaluation and Benchmarks
+
+Two developer-only console projects (not shipped in the installer) support quality and performance work:
+
+```powershell
+# Precision/recall/F1/latency against the labeled corpus under tools\KeyFix.Evaluation\EvaluationData
+dotnet run --project .\tools\KeyFix.Evaluation\KeyFix.Evaluation.csproj --configuration Release
+
+# Timing and allocation micro-benchmarks
+dotnet run --project .\tools\KeyFix.Benchmarks\KeyFix.Benchmarks.csproj --configuration Release
+```
+
+The evaluation corpus is intentionally small and reproducible; results reflect only that corpus, not a general real-world accuracy claim. Extend `tools\KeyFix.Evaluation\EvaluationData` to strengthen it.
+
 ## Package Installer
 
 ```powershell
@@ -220,13 +264,17 @@ The setup wizard uses the AT8 logo. The app icon and installer icon use the KeyF
 
 ```text
 src/
-  KeyboardLanguageGuard.Core/   detection logic, dictionaries, and keyboard layout maps
+  KeyboardLanguageGuard.Core/   correction engine, dictionaries, and keyboard layout maps
   KeyboardLanguageGuard.App/    Windows tray app, settings UI, hooks, alerts, and correction services
 tests/
   KeyboardLanguageGuard.Tests/  xUnit test suite
+tools/
+  KeyFix.Evaluation/             offline evaluation harness (dev-only, not shipped)
+  KeyFix.Benchmarks/             timing/allocation micro-benchmarks (dev-only, not shipped)
 installer/                      Inno Setup script and installer assets
 assets/                         logos and icons
-scripts/                        build, publish, and packaging scripts
+scripts/                        build, publish, packaging, and data-validation scripts
+data/                           data source manifest (data/sources.json)
 .github/                        GitHub Actions workflow
 ```
 
@@ -241,13 +289,12 @@ scripts/                        build, publish, and packaging scripts
 
 ## Roadmap
 
-Planned for future releases (not present in 0.6.0):
+Planned for future releases (not present yet):
 
-- One-step undo of an applied automatic correction
-- Local learning that adapts to your accepted and rejected corrections
-- A lightweight bigram context model for smarter scoring
-- An in-app diagnostic test area and optional local diagnostic logging
-- An offline evaluation harness with measured precision/recall
+- A statistical (trigram or richer) context model, and bigram assets for Persian, Arabic, and German
+- An in-app diagnostic test area showing candidates, scores, and decision reasons for a sample you type
+- A larger, more statistically meaningful evaluation corpus
+- Automated desktop-input testing against real Windows applications
 - Per-app correction profiles
 - Fully localized settings UI
 - Code signing for the installer

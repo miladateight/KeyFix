@@ -50,6 +50,28 @@ public sealed class TextRingBuffer
         }
     }
 
+    /// <summary>
+    /// The word immediately before <see cref="CurrentCorrectionScope"/>, used as left context for
+    /// the bigram model. Empty when there is no earlier word in the buffer.
+    /// </summary>
+    public string PreviousToken
+    {
+        get
+        {
+            string value = _text.ToString();
+            int end = value.Length;
+            while (end > 0 && char.IsWhiteSpace(value[end - 1])) end--;      // skip trailing ws
+            int scopeStart = end;
+            while (scopeStart > 0 && !char.IsWhiteSpace(value[scopeStart - 1])) scopeStart--; // skip current word
+            int prevEnd = scopeStart;
+            while (prevEnd > 0 && char.IsWhiteSpace(value[prevEnd - 1])) prevEnd--; // skip separating ws
+            if (prevEnd == 0) return string.Empty;
+            int prevStart = prevEnd;
+            while (prevStart > 0 && !char.IsWhiteSpace(value[prevStart - 1])) prevStart--;
+            return value[prevStart..prevEnd];
+        }
+    }
+
     /// <summary>Any whitespace characters that follow the current correction scope.</summary>
     public string TrailingWhitespace
     {

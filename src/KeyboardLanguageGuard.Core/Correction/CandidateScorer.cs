@@ -1,4 +1,6 @@
 using KeyboardLanguageGuard.Core.Keyboard;
+using KeyboardLanguageGuard.Core.Language;
+using KeyboardLanguageGuard.Core.Learning;
 using KeyboardLanguageGuard.Core.Settings;
 
 namespace KeyboardLanguageGuard.Core.Correction;
@@ -11,8 +13,15 @@ namespace KeyboardLanguageGuard.Core.Correction;
 public sealed class CandidateScorer
 {
     private readonly CorrectionPolicy _policy;
+    private readonly IBigramLanguageModel _bigram;
+    private readonly ICorrectionMemory _memory;
 
-    public CandidateScorer(CorrectionPolicy policy) => _policy = policy;
+    public CandidateScorer(CorrectionPolicy policy, IBigramLanguageModel? bigram = null, ICorrectionMemory? memory = null)
+    {
+        _policy = policy;
+        _bigram = bigram ?? NullBigramModel.Instance;
+        _memory = memory ?? NullCorrectionMemory.Instance;
+    }
 
     /// <summary>Scores <paramref name="candidate"/> in place (also returns the score) on a 0–100 scale.</summary>
     public double Score(CorrectionInput input, CorrectionCandidate candidate)
@@ -42,6 +51,14 @@ public sealed class CandidateScorer
         {
             score += _policy.KeyboardAdjacencyBonus;
         }
+
+        // Offline context: does this candidate fit the surrounding words?
+        double context = _bigram.ContextScore(candidate.Language, input.PreviousToken, candidate.Text, input.NextToken);
+        score += _policy.ContextWeight * context;
+
+        // Personal learning nudges confidence up or down within a safe band. It can suppress a
+        // correction the user keeps rejecting but never manufactures confidence on its own.
+        score += _memory.ScoreAdjustment(candidate.Language, input.LookupForm, candidate.Text, _policy);
 
         candidate.Score = score;
         return score;

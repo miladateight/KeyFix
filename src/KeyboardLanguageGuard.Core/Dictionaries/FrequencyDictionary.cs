@@ -52,40 +52,34 @@ public sealed class FrequencyDictionary : IFrequencyDictionary
     {
         return new Dictionary<LanguageKind, LanguageEntry>
         {
-            [LanguageKind.Persian] = LoadResource("words-fa.txt", LanguageKind.Persian),
-            [LanguageKind.English] = LoadResource("words-en.txt", LanguageKind.English),
-            [LanguageKind.German] = LoadResource("words-de.txt", LanguageKind.German),
-            [LanguageKind.Arabic] = LoadResource("words-ar.txt", LanguageKind.Arabic)
+            [LanguageKind.Persian] = LoadResource("words-fa.txt", "typos-fa.txt", LanguageKind.Persian),
+            [LanguageKind.English] = LoadResource("words-en.txt", "typos-en.txt", LanguageKind.English),
+            [LanguageKind.German] = LoadResource("words-de.txt", "typos-de.txt", LanguageKind.German),
+            [LanguageKind.Arabic] = LoadResource("words-ar.txt", "typos-ar.txt", LanguageKind.Arabic)
         };
     }
 
-    private static LanguageEntry LoadResource(string fileName, LanguageKind language)
+    private static LanguageEntry LoadResource(string fileName, string blacklistFileName, LanguageKind language)
     {
         Dictionary<string, int> ranks = new(StringComparer.Ordinal);
         List<string> ordered = new();
 
-        Assembly assembly = typeof(FrequencyDictionary).Assembly;
-        string? resourceName = assembly
-            .GetManifestResourceNames()
-            .FirstOrDefault(name => name.EndsWith(fileName, StringComparison.OrdinalIgnoreCase));
+        HashSet<string> blacklist = LoadBlacklist(blacklistFileName, language);
 
-        if (resourceName is null)
+        using StreamReader? reader = OpenResource(fileName);
+        if (reader is null)
         {
             return new LanguageEntry(ranks, ordered);
         }
 
-        using Stream? stream = assembly.GetManifestResourceStream(resourceName);
-        if (stream is null)
-        {
-            return new LanguageEntry(ranks, ordered);
-        }
-
-        using StreamReader reader = new(stream, Encoding.UTF8);
         string? line;
         while ((line = reader.ReadLine()) is not null)
         {
             string word = Normalizer.ToLookup(language, line);
-            if (word.Length < 2)
+
+            // Skip too-short and reviewed typo-contaminant entries so they are never treated as
+            // valid rare words that would block a correction.
+            if (word.Length < 2 || blacklist.Contains(word))
             {
                 continue;
             }
@@ -99,6 +93,46 @@ public sealed class FrequencyDictionary : IFrequencyDictionary
         }
 
         return new LanguageEntry(ranks, ordered);
+    }
+
+    private static HashSet<string> LoadBlacklist(string blacklistFileName, LanguageKind language)
+    {
+        HashSet<string> set = new(StringComparer.Ordinal);
+        using StreamReader? reader = OpenResource(blacklistFileName);
+        if (reader is null)
+        {
+            return set;
+        }
+
+        string? line;
+        while ((line = reader.ReadLine()) is not null)
+        {
+            string trimmed = line.Trim();
+            if (trimmed.Length == 0 || trimmed[0] == '#')
+            {
+                continue;
+            }
+
+            set.Add(Normalizer.ToLookup(language, trimmed));
+        }
+
+        return set;
+    }
+
+    private static StreamReader? OpenResource(string fileName)
+    {
+        Assembly assembly = typeof(FrequencyDictionary).Assembly;
+        string? resourceName = assembly
+            .GetManifestResourceNames()
+            .FirstOrDefault(name => name.EndsWith(fileName, StringComparison.OrdinalIgnoreCase));
+
+        if (resourceName is null)
+        {
+            return null;
+        }
+
+        Stream? stream = assembly.GetManifestResourceStream(resourceName);
+        return stream is null ? null : new StreamReader(stream, Encoding.UTF8);
     }
 
     /// <summary>Loaded data for one language: lookup-key → rank plus the words in frequency order.</summary>

@@ -20,4 +20,10 @@ public sealed class CorrectionInput
 
     /// <summary>Structural class of the token (word, url, version, ...).</summary>
     public TokenKind Kind { get; init; } = TokenKind.Word;
+
+    /// <summary>The previous token in the same line, when available (for context scoring).</summary>
+    public string? PreviousToken { get; init; }
+
+    /// <summary>The next token, when available. Usually null (correction runs at the word boundary).</summary>
+    public string? NextToken { get; init; }
 }
