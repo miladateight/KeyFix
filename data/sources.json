@@ -1,0 +1,35 @@
+{
+  "$comment": "Provenance for the embedded word-frequency lists in src/KeyboardLanguageGuard.Core/Resources. Regenerate with scripts/extract_wordfreq.py. Derived output contains only word strings ordered by frequency.",
+  "sources": [
+    {
+      "language": ["en", "de", "ar", "fa"],
+      "name": "hermitdave/FrequencyWords",
+      "url": "https://github.com/hermitdave/FrequencyWords",
+      "license": "CC-BY-SA-4.0",
+      "version": "content/2016 + content/2018 (OpenSubtitles)",
+      "purpose": "frequency",
+      "redistribution": true,
+      "attribution_required": true
+    },
+    {
+      "language": ["en", "de", "ar"],
+      "name": "rspeer/wordfreq",
+      "url": "https://github.com/rspeer/wordfreq",
+      "license": "MIT (code); aggregated permissive/CC data",
+      "version": "large/small frequency dictionaries",
+      "purpose": "frequency",
+      "redistribution": true,
+      "attribution_required": false
+    },
+    {
+      "language": ["fa"],
+      "name": "behnam/persian-words-frequency",
+      "url": "https://github.com/behnam/persian-words-frequency",
+      "license": "CC-BY-SA-3.0",
+      "version": "persian-wikipedia.txt",
+      "purpose": "frequency",
+      "redistribution": true,
+      "attribution_required": true
+    }
+  ]
+}

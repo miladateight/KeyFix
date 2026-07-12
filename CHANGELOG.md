@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.6.0 - 2026-07-12
+
+### Correction engine
+- Introduced a shared `CorrectionDecisionEngine` that always reports which kind of correction it is proposing: `LayoutCorrection`, `SpellingCorrection`, `Normalization`, `UserDictionaryCorrection`, or `NoCorrection` — replacing the previous single bag of heuristics.
+- Separated wrong-keyboard-layout correction from ordinary spelling correction into independent candidate generators evaluated by one conservative policy.
+- Added an offline **spelling auto-correction** system (new, **off by default**) using a SymSpell-style symmetric-delete index with bounded Damerau/OSA edit distance, built lazily per language.
+- Added an interpretable weighted `CandidateScorer` + `CorrectionPolicy`. Automatic correction now requires the best candidate to clear an absolute confidence threshold **and** beat the runner-up by an ambiguity margin; ambiguous cases are never auto-applied.
+- Added `CorrectionAggressiveness` (Conservative / Balanced / Aggressive), defaulting to Conservative.
+- Added decision `ReasonCode`s (e.g. `OriginalWordValid`, `ProtectedToken`, `CandidateAmbiguous`) for diagnosability without logging typed text.
+
+### False-positive protection
+- Added a `TokenClassifier` that protects URLs, emails, file paths, command flags, versions, domains, hashtags, mentions, identifiers (camelCase/PascalCase/snake_case/SCREAMING_SNAKE), acronyms, numbers, `.NET`-style technical tokens, and emoji from any correction.
+- Wrong-layout correction remains conservative: it never rewrites a word that is already valid in the active language.
+
+### Normalization & personalization
+- Centralized language-aware normalization in a single `Normalizer` with separate **lookup**, **display**, and **replacement** forms so lookup folding never rewrites the user's visible text.
+- Added a local, private **user dictionary** (add / remove / list / import / export, optional replacement pairs) stored under `%APPDATA%\KeyFix`. User words always win and are never "corrected".
+
+### Settings & UI
+- Added settings: `EnableWrongLayoutDetection`, `EnableWrongLayoutAutoCorrection`, `EnableSpellingDetection`, `EnableSpellingAutoCorrection`, `EnableNormalizationSuggestions`, `EnablePersonalLearning`, `EnableUndo`, `CorrectionAggressiveness`, `ShowCorrectionNotification`.
+- Settings panel now explains the difference between fixing wrong-keyboard-language typing and fixing ordinary spelling mistakes.
+- Bumped settings schema to version 7. Migration preserves existing user choices and never enables spelling auto-correction automatically.
+
+### Data & tests
+- Frequency-sorted the embedded word lists (rank is now used as a scoring signal) and documented the additional data sources in `THIRD_PARTY_NOTICES.md` / `data/sources.json`.
+- Expanded the test suite from 43 to 133 tests, including a first-class "must not correct" suite (protected tokens, valid words, ambiguity) and settings-migration tests.
+
 ## 0.5.0 - 2026-06-30
 
 - Expanded embedded word dictionaries from ~6,000 to ~30,000 words per language (English, German, Arabic) and ~26,000 for Persian, using merged OpenSubtitles 2016 + 2018 frequency data.

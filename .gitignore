@@ -11,3 +11,9 @@ publish/
 artifacts/
 .tools/
 *.nupkg
+.claude/
+.codex/
+graphify-out/
+.graphify-cache/
+*.graphify.tmp
+*.graphify.log

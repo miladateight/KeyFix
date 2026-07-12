@@ -2,7 +2,7 @@
 
 ![KeyFix logo](assets/keyfix-logo-512.png)
 
-KeyFix is a privacy-first Windows tray app that catches wrong keyboard-layout typing. When you type a word with the wrong active layout, KeyFix can alert you, suggest the right layout, switch the input language, and correct the mistyped word after you press Space.
+KeyFix is a privacy-first Windows tray app that fixes two different kinds of typing mistakes: typing with the **wrong keyboard language**, and ordinary **spelling mistakes**. It runs fully offline, is conservative by default, and always knows which kind of correction it is proposing.
 
 [Website](https://ateight.xyz/KeyFix/) | [Download latest release](https://github.com/miladateight/KeyFix/releases/latest) | [Privacy](PRIVACY.md) | [Changelog](CHANGELOG.md)
 
@@ -31,7 +31,11 @@ Important: after installing KeyFix, open **Settings** and keep only the language
 - Three detection modes: `AlertOnly`, `AlertAndSuggest`, and `AutoSwitch`
 - Automatic correction of the previous mistyped word in `AutoSwitch` mode
 - Correction happens after Space, so KeyFix does not rewrite words while you are still typing
-- Dictionary-based detection using expanded word lists for English, Persian, Arabic, and German
+- Dictionary-based detection using frequency-ordered word lists for English, Persian, Arabic, and German
+- Optional offline spelling auto-correction (SymSpell-style index; off by default)
+- Conservative decision engine with an ambiguity margin and a Conservative/Balanced/Aggressive control
+- Protected-token detection (URLs, emails, paths, versions, code identifiers, and more) to avoid false positives
+- Local, private personal dictionary with import/export and optional replacement pairs
 - Fast Unicode text replacement, with a guarded clipboard fallback path
 - Optional launch at Windows startup
 - Built-in Windows alert sound
@@ -41,6 +45,25 @@ Important: after installing KeyFix, open **Settings** and keep only the language
 - Local-only detection with no telemetry and no remote server
 - GitHub Actions build workflow
 - Inno Setup installer script
+
+## Two Kinds of Correction
+
+KeyFix separates two problems and lets you control each independently in **Settings**:
+
+| Setting | Fixes | Example | Default |
+| --- | --- | --- | --- |
+| **Fix typing done with the wrong keyboard language** | You typed the right keys under the wrong layout | `اثممخ` → `hello` | On |
+| **Fix ordinary spelling mistakes** | A genuine typo while the correct layout is active | `recieve` → `receive`, `برنامع` → `برنامه` | **Off** |
+
+Spelling auto-correction is off by default; enable it (and, optionally, "Apply automatically")
+only if you want it. A **How eager** control (Conservative / Balanced / Aggressive, default
+Conservative) governs how confident KeyFix must be before it acts. Automatic correction requires
+both high confidence and a clear margin over the next-best option, so ambiguous cases are left
+alone.
+
+KeyFix never touches URLs, emails, file paths, command flags, version numbers, code identifiers
+(`camelCase`, `snake_case`, …), hashtags, mentions, acronyms, numbers, or emoji. Words you add to
+your **personal dictionary** are always kept and never "corrected".
 
 ## Detection Modes
 
@@ -70,7 +93,7 @@ KeyFix clears its buffer after Enter, Tab, unsupported layouts, excluded apps, a
 Download the latest installer from the [GitHub Releases page](https://github.com/miladateight/KeyFix/releases/latest):
 
 ```text
-KeyFixSetup-0.5.0.exe
+KeyFixSetup-0.6.0.exe
 ```
 
 After installing:
@@ -91,6 +114,7 @@ KeyFix is designed to avoid storing user text.
 - There is no telemetry, analytics SDK, or remote server.
 - Only a short local in-memory buffer is used for detection.
 - Settings are stored in `%APPDATA%\KeyFix\settings.json`.
+- The personal dictionary is stored locally in `%APPDATA%\KeyFix\user-dictionary.json` and is never uploaded.
 - The default exclusion list includes password managers and terminals.
 
 Read more in [PRIVACY.md](PRIVACY.md).

@@ -2,7 +2,8 @@ using System.Drawing;
 using System.Windows.Forms;
 using KeyboardLanguageGuard.App.Services;
 using KeyboardLanguageGuard.App.UI;
-using KeyboardLanguageGuard.Core.Detection;
+using KeyboardLanguageGuard.Core.Correction;
+using KeyboardLanguageGuard.Core.Dictionaries;
 using KeyboardLanguageGuard.Core.Settings;
 using KeyboardLanguageGuard.Core.Text;
 
@@ -12,7 +13,8 @@ public sealed class TrayApplicationContext : ApplicationContext
 {
     private readonly SettingsStore _settingsStore;
     private readonly KeyboardLayoutService _layoutService = new();
-    private readonly LanguageDetector _detector = new();
+    private readonly CorrectionDecisionEngine _engine = new();
+    private readonly UserDictionaryStore _userDictionaryStore = new();
     private readonly TextRingBuffer _buffer = new();
     private readonly AlertService _alertService = new();
     private readonly TextCorrectionService _textCorrectionService = new();
@@ -20,6 +22,7 @@ public sealed class TrayApplicationContext : ApplicationContext
     private readonly KeyboardHookService _hookService;
     private readonly NotifyIcon _notifyIcon;
     private readonly SynchronizationContext _uiContext;
+    private UserDictionary _userDictionary;
     private AppSettings _settings;
     private bool _paused;
     private DateTimeOffset _lastAlert = DateTimeOffset.MinValue;
@@ -32,6 +35,8 @@ public sealed class TrayApplicationContext : ApplicationContext
         _settings = _settingsStore.Load();
         _settings.LaunchAtStartup = _startupService.IsEnabled();
         _paused = _settings.StartPaused;
+        _userDictionary = _userDictionaryStore.Load();
+        WarmupSpellingIfEnabled();
 
         _notifyIcon = new NotifyIcon
         {
@@ -152,6 +157,7 @@ public sealed class TrayApplicationContext : ApplicationContext
             _settingsStore.Save(_settings);
             _startupService.SetEnabled(_settings.LaunchAtStartup);
             _buffer.Clear();
+            WarmupSpellingIfEnabled();
         }
     }
 
@@ -219,7 +225,7 @@ public sealed class TrayApplicationContext : ApplicationContext
     {
         _inputVersion++;
         _buffer.Clear();
-        _detector.Context.Clear();
+        _engine.LayoutContext.Clear();
     }
 
     private bool IsForegroundProcessExcluded()
@@ -243,18 +249,17 @@ public sealed class TrayApplicationContext : ApplicationContext
             return;
         }
 
-        DetectionResult result = _detector.Detect(request.Scope, request.CurrentLanguage, _settings);
-        if (!result.ShouldAlert)
+        CorrectionDecision decision = _engine.Decide(request.Scope, request.CurrentLanguage, _settings, _userDictionary);
+        if (!decision.IsCorrection)
         {
             // Record the current language as the user's intent so the context
             // can bias future detections toward it.
-            _detector.Context.Record(request.CurrentLanguage);
+            _engine.LayoutContext.Record(request.CurrentLanguage);
             return;
         }
 
-        // Record the suggested language so the context knows the user is now
-        // typing in this language.
-        _detector.Context.Record(result.SuggestedLanguage);
+        // Record the suggested language so the context knows the user is now typing in it.
+        _engine.LayoutContext.Record(decision.SuggestedLanguage);
 
         bool canNotify = DateTimeOffset.Now - _lastAlert >= TimeSpan.FromSeconds(3);
         if (canNotify)
@@ -263,28 +268,24 @@ public sealed class TrayApplicationContext : ApplicationContext
             _alertService.Play(_settings);
         }
 
-        if (_settings.Mode == DetectionMode.AutoSwitch)
+        // Only AutoSwitch mode may modify text, and only when the decision itself cleared the
+        // conservative confidence/ambiguity gate (CanAutoApply already respects the per-type
+        // enable flags — e.g. spelling stays off unless the user opted in).
+        if (_settings.Mode == DetectionMode.AutoSwitch && decision.CanAutoApply)
         {
-            // Clear the buffer first so any later real typing starts clean, then run the
-            // text replacement on a dedicated background thread. The low-level keyboard
-            // hook lives on this UI thread; if we injected the backspaces/characters from
-            // here we would block the UI thread (Thread.Sleep) and Windows would drop the
-            // injected keystrokes because the hook can no longer be serviced. Running the
-            // replacement off the UI thread keeps the hook responsive so the synthetic keys
-            // are actually delivered.
             _buffer.Clear();
-            RunAutoFixOffUiThread(result, request.TrailingWhitespace);
+            RunAutoFixOffUiThread(decision, request.TrailingWhitespace);
         }
 
-        if (canNotify && _settings.ShowNotification)
+        if (canNotify && _settings.ShowNotification && _settings.ShowCorrectionNotification)
         {
-            ShowDetectionNotification(result);
+            ShowDecisionNotification(decision);
         }
     }
 
-    private void RunAutoFixOffUiThread(DetectionResult result, string trailingWhitespace)
+    private void RunAutoFixOffUiThread(CorrectionDecision decision, string trailingWhitespace)
     {
-        Thread worker = new(() => ApplyAutoFix(result, trailingWhitespace))
+        Thread worker = new(() => ApplyAutoFix(decision, trailingWhitespace))
         {
             IsBackground = true,
             Name = "KeyFixAutoCorrect"
@@ -295,35 +296,71 @@ public sealed class TrayApplicationContext : ApplicationContext
         worker.Start();
     }
 
-    private void ShowDetectionNotification(DetectionResult result)
+    private void ShowDecisionNotification(CorrectionDecision decision)
     {
-        string title = _settings.Mode == DetectionMode.AutoSwitch
-            ? $"KeyFix switched to {result.SuggestedLanguage}"
-            : $"Possible wrong layout: {result.SuggestedLanguage}";
+        bool willApply = _settings.Mode == DetectionMode.AutoSwitch && decision.CanAutoApply;
+        string what = decision.Type switch
+        {
+            CorrectionType.LayoutCorrection => $"keyboard layout ({decision.SuggestedLanguage})",
+            CorrectionType.SpellingCorrection => "spelling",
+            CorrectionType.Normalization => "spelling normalization",
+            CorrectionType.UserDictionaryCorrection => "your dictionary",
+            _ => "text"
+        };
 
+        string title = willApply ? $"KeyFix fixed {what}" : $"KeyFix suggestion ({what})";
         string text = _settings.Mode == DetectionMode.AlertOnly
-            ? "KeyFix detected a likely layout mismatch."
-            : $"Try: {result.SuggestedText}";
+            ? "KeyFix detected a likely mistake."
+            : $"Try: {decision.ReplacementText}";
 
         _notifyIcon.BalloonTipTitle = title;
         _notifyIcon.BalloonTipText = text.Length > 240 ? text[..240] : text;
         _notifyIcon.ShowBalloonTip(2500);
     }
 
-    private bool ApplyAutoFix(DetectionResult result, string trailingWhitespace)
+    private bool ApplyAutoFix(CorrectionDecision decision, string trailingWhitespace)
     {
-        int charactersToReplace = result.CharactersToReplace + trailingWhitespace.Length;
-        string textToInsert = result.TextToInsert + trailingWhitespace;
+        int charactersToReplace = decision.CharactersToReplace + trailingWhitespace.Length;
+        string textToInsert = decision.ReplacementText + trailingWhitespace;
         bool fixedText = true;
 
-        if (_settings.AutoCorrectTypedText)
+        // For layout corrections the AutoCorrectTypedText toggle decides whether we only switch
+        // the layout or also rewrite the word. Spelling / normalization / user-dictionary fixes are
+        // always about rewriting the word, so they always replace.
+        bool shouldReplace = decision.Type != CorrectionType.LayoutCorrection || _settings.AutoCorrectTypedText;
+        if (shouldReplace)
         {
             fixedText = _textCorrectionService.ReplaceTextBeforeCursor(charactersToReplace, textToInsert);
         }
 
-        _layoutService.SwitchTo(result.SuggestedLanguage);
+        if (decision.RequiresLayoutSwitch)
+        {
+            _layoutService.SwitchTo(decision.SuggestedLanguage);
+        }
 
         return fixedText;
+    }
+
+    private void WarmupSpellingIfEnabled()
+    {
+        if (!_settings.EnableSpellingDetection)
+        {
+            return;
+        }
+
+        Thread worker = new(() =>
+        {
+            foreach (LanguageProfile profile in _settings.Languages.Where(l => l.Enabled))
+            {
+                _engine.WarmupSpelling(profile.Language);
+            }
+        })
+        {
+            IsBackground = true,
+            Name = "KeyFixSpellingWarmup"
+        };
+
+        worker.Start();
     }
 
     private readonly record struct CorrectionRequest(

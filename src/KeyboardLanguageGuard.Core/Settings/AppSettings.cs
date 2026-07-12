@@ -8,7 +8,7 @@ namespace KeyboardLanguageGuard.Core.Settings;
 public sealed class AppSettings
 {
     /// <summary>Current schema version. Bump this and add a migration branch when fields change.</summary>
-    public const int CurrentSettingsVersion = 6;
+    public const int CurrentSettingsVersion = 7;
 
     public int SettingsVersion { get; set; } = CurrentSettingsVersion;
 
@@ -45,6 +45,38 @@ public sealed class AppSettings
     public bool AutoCorrectTypedText { get; set; } = true;
 
     public bool LaunchAtStartup { get; set; }
+
+    // --- 0.6.0 correction engine settings ---------------------------------------------------
+
+    /// <summary>Detect when text was typed under the wrong keyboard layout.</summary>
+    public bool EnableWrongLayoutDetection { get; set; } = true;
+
+    /// <summary>Automatically fix high-confidence wrong-layout mistakes (in AutoSwitch mode).</summary>
+    public bool EnableWrongLayoutAutoCorrection { get; set; } = true;
+
+    /// <summary>Detect ordinary spelling mistakes made while the correct layout is active.</summary>
+    public bool EnableSpellingDetection { get; set; }
+
+    /// <summary>
+    /// Automatically fix ordinary spelling mistakes. Off by default and never enabled by migration —
+    /// the conservative default is to detect/suggest, not silently rewrite.
+    /// </summary>
+    public bool EnableSpellingAutoCorrection { get; set; }
+
+    /// <summary>Offer orthographic normalization suggestions (e.g. Arabic Yeh/Kaf → Persian).</summary>
+    public bool EnableNormalizationSuggestions { get; set; }
+
+    /// <summary>Reserved for local learning from accepted/rejected corrections.</summary>
+    public bool EnablePersonalLearning { get; set; } = true;
+
+    /// <summary>Reserved for one-step undo of an applied correction.</summary>
+    public bool EnableUndo { get; set; } = true;
+
+    /// <summary>How eager auto-correction is. Defaults to the safest option.</summary>
+    public CorrectionAggressiveness CorrectionAggressiveness { get; set; } = CorrectionAggressiveness.Conservative;
+
+    /// <summary>Show a tray notification when a correction is applied.</summary>
+    public bool ShowCorrectionNotification { get; set; } = true;
 
     public List<LanguageProfile> Languages { get; set; } = new()
     {

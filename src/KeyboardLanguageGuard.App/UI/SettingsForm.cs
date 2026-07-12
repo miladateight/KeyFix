@@ -14,6 +14,11 @@ public sealed class SettingsForm : Form
     private readonly CheckBox _playSound = new() { Text = "Play alert sound", AutoSize = true };
     private readonly CheckBox _showNotification = new() { Text = "Show Windows tray notification", AutoSize = true };
     private readonly CheckBox _autoCorrectTypedText = new() { Text = "Correct mistyped word automatically in AutoSwitch mode", AutoSize = true };
+    private readonly CheckBox _enableWrongLayoutDetection = new() { Text = "Fix typing done with the wrong keyboard language", AutoSize = true };
+    private readonly CheckBox _enableSpellingDetection = new() { Text = "Fix ordinary spelling mistakes (same language)", AutoSize = true };
+    private readonly CheckBox _enableSpellingAutoCorrection = new() { Text = "Apply spelling fixes automatically (otherwise only suggest)", AutoSize = true };
+    private readonly CheckBox _enableNormalizationSuggestions = new() { Text = "Suggest letter normalization (e.g. Arabic → Persian ی/ک)", AutoSize = true };
+    private readonly ComboBox _aggressiveness = new() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly CheckBox _launchAtStartup = new() { Text = "Start KeyFix when Windows starts", AutoSize = true };
     private readonly TextBox _soundPath = new() { Width = 390 };
     private readonly TextBox _excludedProcesses = new() { Multiline = true, ScrollBars = ScrollBars.Vertical, Height = 90, Width = 480 };
@@ -28,10 +33,11 @@ public sealed class SettingsForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        ClientSize = new Size(590, 625);
+        ClientSize = new Size(590, 760);
         Font = new Font("Segoe UI", 9F);
 
         _mode.Items.AddRange(Enum.GetNames<DetectionMode>());
+        _aggressiveness.Items.AddRange(Enum.GetNames<CorrectionAggressiveness>());
 
         BuildLayout();
         LoadSettings();
@@ -46,11 +52,11 @@ public sealed class SettingsForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(18),
             ColumnCount = 1,
-            RowCount = 10
+            RowCount = 12
         };
 
         root.RowStyles.Clear();
-        for (int index = 0; index < 10; index++)
+        for (int index = 0; index < 12; index++)
         {
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         }
@@ -69,9 +75,21 @@ public sealed class SettingsForm : Form
         languagePanel.Controls.AddRange([_english, _persian, _arabic, _german]);
         languages.Controls.Add(languagePanel);
 
+        GroupBox corrections = new() { Text = "Corrections", Width = 535, Height = 175, AutoSize = true };
+        FlowLayoutPanel correctionsPanel = new() { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, Padding = new Padding(10), AutoSize = true };
+        correctionsPanel.Controls.AddRange([
+            _enableWrongLayoutDetection,
+            _enableSpellingDetection,
+            _enableSpellingAutoCorrection,
+            _enableNormalizationSuggestions
+        ]);
+        correctionsPanel.Controls.Add(Field("How eager", _aggressiveness));
+        corrections.Controls.Add(correctionsPanel);
+
         root.Controls.Add(intro);
         root.Controls.Add(languages);
         root.Controls.Add(Field("Mode", _mode));
+        root.Controls.Add(corrections);
         root.Controls.Add(_playSound);
         root.Controls.Add(_showNotification);
         root.Controls.Add(_autoCorrectTypedText);
@@ -144,9 +162,14 @@ public sealed class SettingsForm : Form
         _arabic.Checked = Settings.IsLanguageEnabled(LanguageKind.Arabic);
         _german.Checked = Settings.IsLanguageEnabled(LanguageKind.German);
         _mode.SelectedItem = Settings.Mode.ToString();
+        _aggressiveness.SelectedItem = Settings.CorrectionAggressiveness.ToString();
         _playSound.Checked = Settings.PlaySound;
         _showNotification.Checked = Settings.ShowNotification;
         _autoCorrectTypedText.Checked = Settings.AutoCorrectTypedText;
+        _enableWrongLayoutDetection.Checked = Settings.EnableWrongLayoutDetection;
+        _enableSpellingDetection.Checked = Settings.EnableSpellingDetection;
+        _enableSpellingAutoCorrection.Checked = Settings.EnableSpellingAutoCorrection;
+        _enableNormalizationSuggestions.Checked = Settings.EnableNormalizationSuggestions;
         _launchAtStartup.Checked = Settings.LaunchAtStartup;
         _soundPath.Text = Settings.CustomSoundPath ?? string.Empty;
         _excludedProcesses.Text = string.Join(Environment.NewLine, Settings.ExcludedProcesses);
@@ -168,9 +191,15 @@ public sealed class SettingsForm : Form
         Settings.SettingsVersion = AppSettings.CurrentSettingsVersion;
         Settings.FirstRunCompleted = true;
         Settings.Mode = Enum.Parse<DetectionMode>(_mode.SelectedItem?.ToString() ?? nameof(DetectionMode.AutoSwitch));
+        Settings.CorrectionAggressiveness = Enum.Parse<CorrectionAggressiveness>(
+            _aggressiveness.SelectedItem?.ToString() ?? nameof(CorrectionAggressiveness.Conservative));
         Settings.PlaySound = _playSound.Checked;
         Settings.ShowNotification = _showNotification.Checked;
         Settings.AutoCorrectTypedText = _autoCorrectTypedText.Checked;
+        Settings.EnableWrongLayoutDetection = _enableWrongLayoutDetection.Checked;
+        Settings.EnableSpellingDetection = _enableSpellingDetection.Checked;
+        Settings.EnableSpellingAutoCorrection = _enableSpellingAutoCorrection.Checked;
+        Settings.EnableNormalizationSuggestions = _enableNormalizationSuggestions.Checked;
         Settings.LaunchAtStartup = _launchAtStartup.Checked;
         Settings.CustomSoundPath = string.IsNullOrWhiteSpace(_soundPath.Text) ? null : _soundPath.Text.Trim();
         Settings.ExcludedProcesses = _excludedProcesses.Text
@@ -205,6 +234,15 @@ public sealed class SettingsForm : Form
             StartPaused = settings.StartPaused,
             AutoCorrectTypedText = settings.AutoCorrectTypedText,
             LaunchAtStartup = settings.LaunchAtStartup,
+            EnableWrongLayoutDetection = settings.EnableWrongLayoutDetection,
+            EnableWrongLayoutAutoCorrection = settings.EnableWrongLayoutAutoCorrection,
+            EnableSpellingDetection = settings.EnableSpellingDetection,
+            EnableSpellingAutoCorrection = settings.EnableSpellingAutoCorrection,
+            EnableNormalizationSuggestions = settings.EnableNormalizationSuggestions,
+            EnablePersonalLearning = settings.EnablePersonalLearning,
+            EnableUndo = settings.EnableUndo,
+            CorrectionAggressiveness = settings.CorrectionAggressiveness,
+            ShowCorrectionNotification = settings.ShowCorrectionNotification,
             Languages = settings.Languages
                 .Select(item => new LanguageProfile { Language = item.Language, Enabled = item.Enabled })
                 .ToList(),
