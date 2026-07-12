@@ -1,12 +1,37 @@
-# KeyFix
+<p align="center">
+  <img src="assets/keyfix-logo-512.png" alt="KeyFix logo" width="180">
+</p>
 
-![KeyFix logo](assets/keyfix-logo-512.png)
+<h1 align="center">KeyFix</h1>
 
-KeyFix is a privacy-first Windows tray app that fixes two different kinds of typing mistakes: typing with the **wrong keyboard language**, and ordinary **spelling mistakes**. It runs fully offline, is conservative by default, and always knows which kind of correction it is proposing.
+<p align="center">
+  Privacy-first Windows tray app that fixes two kinds of typing mistakes:
+  typing with the <b>wrong keyboard language</b>, and ordinary <b>spelling mistakes</b>.
+  Fully offline, conservative by default.
+</p>
 
-[Website](https://ateight.xyz/KeyFix/) | [Download latest release](https://github.com/miladateight/KeyFix/releases/latest) | [Privacy](PRIVACY.md) | [Changelog](CHANGELOG.md)
+<p align="center">
+  <a href="https://github.com/miladateight/KeyFix/actions/workflows/build.yml"><img src="https://github.com/miladateight/KeyFix/actions/workflows/build.yml/badge.svg" alt="Build status"></a>
+  <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
+  <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6" alt="Windows 10/11">
+  <a href="https://github.com/miladateight/KeyFix/releases/latest"><img src="https://img.shields.io/github/v/release/miladateight/KeyFix?sort=semver" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license"></a>
+</p>
 
-Languages: [English](README.md) | [فارسی](README.fa.md) | [العربية](README.ar.md) | [Deutsch](README.de.md)
+<p align="center">
+  <a href="https://ateight.xyz/KeyFix/">Website</a> ·
+  <a href="https://github.com/miladateight/KeyFix/releases/latest">Latest release</a> ·
+  <a href="PRIVACY.md">Privacy</a> ·
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
+
+<p align="center">
+  <b>Languages:</b>
+  <a href="README.md">English</a> ·
+  <a href="README.fa.md">فارسی</a> ·
+  <a href="README.ar.md">العربية</a> ·
+  <a href="README.de.md">Deutsch</a>
+</p>
 
 ## Why KeyFix Exists
 
@@ -77,7 +102,7 @@ your **personal dictionary** are always kept and never "corrected".
 
 KeyFix keeps a short in-memory buffer of recent typing. When you press Space, it checks the previous word against the enabled language profiles and keyboard layout maps. If another layout is clearly more likely, KeyFix can replace the mistyped word, keep the Space, and switch to the suggested input language.
 
-Example:
+Wrong-layout example:
 
 ```text
 Wanted: hello
@@ -86,7 +111,39 @@ Observed: اثممخ
 Fixed: hello
 ```
 
+Spelling example (only when spelling correction is enabled):
+
+```text
+Active layout: English
+Typed: recieve
+Suggested: receive
+```
+
 KeyFix clears its buffer after Enter, Tab, unsupported layouts, excluded apps, and automatic correction.
+
+## Protected Tokens
+
+To avoid false positives, KeyFix never corrects anything that is not a plain word. Protected tokens include URLs, email addresses, file paths, command-line flags (`--configuration`), version numbers (`v0.6.0`), domains, hashtags, mentions, code identifiers (`camelCase`, `PascalCase`, `snake_case`, `SCREAMING_SNAKE`), acronyms, numbers, mixed alphanumerics, and emoji. Terminals, password managers, and other sensitive apps are excluded entirely via the foreground-app exclusion list.
+
+## Personal Dictionary
+
+You can keep a local, private personal dictionary of your own words. Words you add are always treated as valid and are never "corrected", and you can optionally define replacement pairs (for example, an abbreviation that expands to a longer form). The personal dictionary supports add, remove, list, import (plain UTF-8 text), and export. It is stored locally in:
+
+```text
+%APPDATA%\KeyFix\user-dictionary.json
+```
+
+## Correction Aggressiveness
+
+A single **How eager** setting controls how confident KeyFix must be before it acts:
+
+| Level | Behavior |
+| --- | --- |
+| `Conservative` | Only correct when confidence is very high and unambiguous. Default. |
+| `Balanced` | A moderate balance between catching mistakes and avoiding false positives. |
+| `Aggressive` | Correct more eagerly; more catches, slightly more risk. |
+
+Automatic correction always requires the best candidate to clear the confidence threshold **and** beat the runner-up by a clear margin, so ambiguous cases are never auto-applied.
 
 ## Installation
 
@@ -184,10 +241,15 @@ scripts/                        build, publish, and packaging scripts
 
 ## Roadmap
 
-- Better offline scoring for German vs English
-- One-click undo after automatic correction
-- Per-app profiles
-- Localized settings UI
+Planned for future releases (not present in 0.6.0):
+
+- One-step undo of an applied automatic correction
+- Local learning that adapts to your accepted and rejected corrections
+- A lightweight bigram context model for smarter scoring
+- An in-app diagnostic test area and optional local diagnostic logging
+- An offline evaluation harness with measured precision/recall
+- Per-app correction profiles
+- Fully localized settings UI
 - Code signing for the installer
 
 ## Contributing

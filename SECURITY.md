@@ -10,7 +10,9 @@ If you find a security or privacy issue, open a private security advisory on Git
 
 - `KeyboardHookService`
 - `KeyboardLayoutService`
-- Settings persistence
+- `TextCorrectionService` (SendInput / clipboard fallback)
+- Settings persistence and migration
+- Personal dictionary import/export (imported files are size- and length-bounded, treated as plain UTF-8 text, and never executed or deserialized as untrusted polymorphic content)
 - Any future networking or telemetry code
 
 ## Project Policy

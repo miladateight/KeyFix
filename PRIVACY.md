@@ -8,13 +8,16 @@ The app reads recent keyboard input through a Windows low-level keyboard hook so
 
 ## What The App Stores
 
-The app stores settings only:
+The app stores settings and, if you use it, a personal dictionary:
 
 ```text
 %APPDATA%\KeyFix\settings.json
+%APPDATA%\KeyFix\user-dictionary.json
 ```
 
-Settings include enabled languages, detection mode, thresholds, custom sound path, and excluded process names.
+Settings include enabled languages, detection mode, correction options (including whether spelling auto-correction is enabled — it is off by default), the correction aggressiveness level, custom sound path, and excluded process names.
+
+The personal dictionary contains only the words and optional replacement pairs you add yourself. It is stored locally and is never uploaded. It does not contain typing history or captured text.
 
 ## What The App Does Not Store
 
