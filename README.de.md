@@ -11,6 +11,11 @@
 </p>
 
 <p align="center">
+  <b>0.7.0 ist ein Test-/Vorab-Build.</b> Rückgängig machen, lokales Lernen und die persische
+  Halb-Leerzeichen-Rekonstruktion sind neu; lies vor vollem Vertrauen den Abschnitt „Bekannte Einschränkungen“ weiter unten.
+</p>
+
+<p align="center">
   <a href="https://github.com/miladateight/KeyFix/actions/workflows/build.yml"><img src="https://github.com/miladateight/KeyFix/actions/workflows/build.yml/badge.svg" alt="Build status"></a>
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6" alt="Windows 10/11">
@@ -274,6 +279,17 @@ data/                           Manifest der Datenquellen (data/sources.json)
 - Datenschutz: [PRIVACY.md](PRIVACY.md)
 - Sicherheit: [SECURITY.md](SECURITY.md)
 - Drittanbieter-Hinweise: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+
+## Bekannte Einschränkungen
+
+- **0.7.0 ist ein Test-/Vorab-Build.** Es hat noch nicht die reale Nutzung früherer stabiler Versionen gesammelt; bitte melde alles Unerwartete.
+- **Die Genauigkeit in der Praxis wurde nicht unabhängig gemessen.** Das Evaluierungskorpus (siehe unten) ist klein und handgeschrieben; die 100%-Ergebnisse darauf sind keine allgemeine Genauigkeitsaussage.
+- **Der Speicherbedarf des SymSpell-Index ist bekannt und nicht trivial.** Der Aufbau des Rechtschreib-Index für Englisch dauert derzeit etwa 1,2 Sekunden und belegt etwa 300 MB (einmalig pro Sprache, nicht pro Tastendruck). Bisher nicht weiter optimiert.
+- **Automatisierte Tests gegen ein echtes Windows-Desktop wurden nicht durchgeführt** — in der Umgebung, in der dieser Build überprüft wurde, stand keine Notepad-/Browser-/GUI-Automatisierung zur Verfügung. Die Überprüfung hier stützt sich auf Unit-Tests, das Evaluierungswerkzeug, Benchmarks und Quellcode-Review; siehe die manuelle Test-Checkliste in den Release Notes vor breitem Einsatz.
+- **Das Bigram-Kontextmodell hat nur Daten für Englisch.** Persisch, Arabisch und Deutsch erhalten einen neutralen (wirkungslosen) Kontext-Score.
+- **Die Arabisch-Unterstützung beschränkt sich auf Buchstaben-/Diakritika-Normalisierung** (Alef-Varianten, Tatweel, Harakat). Es gibt noch keine Präfix-/Suffix-/Flexionsanalyse wie bei der persischen Halb-Leerzeichen-Rekonstruktion.
+- **Die Behandlung deutscher Komposita ist eingeschränkt** auf „ein im Wörterbuch fehlendes Kompositum nicht fälschlich als falsch markieren“; es gibt keine tiefere Kompositazerlegung.
+- Die automatische Rechtschreibkorrektur bleibt bewusst zurückhaltend: standardmäßig aus, und automatische Anwendung verlangt immer sowohl eine Vertrauensschwelle als auch eine Mehrdeutigkeits-Marge.
 
 ## Roadmap
 

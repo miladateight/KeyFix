@@ -2,6 +2,9 @@
   { "input": "کتابها", "activeLanguage": "fa", "expectedAction": "Normalization", "expectedReplacement": "کتاب‌ها", "category": "half-space" },
   { "input": "خانهام", "activeLanguage": "fa", "expectedAction": "Normalization", "expectedReplacement": "خانه‌ام", "category": "half-space" },
   { "input": "میخوام", "activeLanguage": "fa", "expectedAction": "Normalization", "expectedReplacement": "می‌خوام", "category": "half-space-prefix" },
+  { "input": "نمیخوام", "activeLanguage": "fa", "expectedAction": "Normalization", "expectedReplacement": "نمی‌خوام", "category": "half-space-prefix" },
+  { "input": "برنامع", "activeLanguage": "fa", "expectedAction": "SpellingCorrection", "expectedReplacement": "برنامه", "category": "single-edit-spelling" },
   { "input": "سلام",   "activeLanguage": "fa", "expectedAction": "NoCorrection", "category": "valid-word" },
-  { "input": "میان",   "activeLanguage": "fa", "expectedAction": "NoCorrection", "category": "valid-word-must-not-split" }
+  { "input": "میان",   "activeLanguage": "fa", "expectedAction": "NoCorrection", "category": "valid-word-must-not-split" },
+  { "input": "میز",    "activeLanguage": "fa", "expectedAction": "NoCorrection", "category": "valid-word-must-not-split" }
 ]

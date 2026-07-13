@@ -11,6 +11,11 @@
 </p>
 
 <p align="center">
+  <b>0.7.0 is a testing / pre-release build.</b> Undo, personal learning, and Persian half-space
+  reconstruction are new; see <a href="#known-limitations">Known Limitations</a> before relying on it.
+</p>
+
+<p align="center">
   <a href="https://github.com/miladateight/KeyFix/actions/workflows/build.yml"><img src="https://github.com/miladateight/KeyFix/actions/workflows/build.yml/badge.svg" alt="Build status"></a>
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6" alt="Windows 10/11">
@@ -286,6 +291,17 @@ data/                           data source manifest (data/sources.json)
 - Privacy policy: [PRIVACY.md](PRIVACY.md)
 - Security policy: [SECURITY.md](SECURITY.md)
 - Third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+
+## Known Limitations
+
+- **0.7.0 is a testing / pre-release build.** It has not accumulated the same real-world usage as earlier stable releases; please report anything unexpected.
+- **Real-world accuracy has not been independently measured.** The evaluation corpus (see below) is small and hand-written; its 100%-on-corpus results are not a general accuracy claim.
+- **SymSpell index memory cost is known and non-trivial.** Building the spelling index for English currently takes roughly 1.2 seconds and allocates on the order of 300 MB the first time spelling detection is used for that language (lazy, once per language, not per keystroke). Not yet further optimized.
+- **Automated Windows desktop testing has not been performed** in the environment this build was verified in — no Notepad/browser/GUI automation was available. Verification here is unit tests, the evaluation harness, benchmarks, and source-level review; see the manual test checklist in the release notes before broad use.
+- **The bigram context model only has data for English.** Persian, Arabic, and German get a neutral (no-op) context score.
+- **Arabic support is limited to letter and diacritic normalization** (Alef variants, tatweel, harakat). It does not yet have prefix/suffix/inflection analysis like Persian's half-space reconstruction.
+- **German compound-word handling is limited** to not flagging an absent compound as misspelled; there is no deeper compound decomposition.
+- Spelling auto-correction remains conservative by design: it stays off by default and always requires both a confidence threshold and an ambiguity margin before auto-applying anything.
 
 ## Roadmap
 

@@ -19,7 +19,13 @@ public sealed class SymSpellIndex
     {
         _maxEdit = System.Math.Clamp(maxEdit, 1, 3);
         _deletes = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-        _terms = new HashSet<string>(StringComparer.Ordinal);
+
+        // When the term count is known upfront (it always is for our embedded word lists, which
+        // hand in a List<string>), size the term set once instead of letting it grow through
+        // several doubling resizes. This only changes internal bucket-array allocation timing,
+        // never the resulting index or lookups.
+        int? knownCount = (terms as IReadOnlyCollection<string>)?.Count;
+        _terms = knownCount is int count ? new HashSet<string>(count, StringComparer.Ordinal) : new HashSet<string>(StringComparer.Ordinal);
 
         foreach (string term in terms)
         {

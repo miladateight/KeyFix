@@ -1,6 +1,8 @@
-# KeyFix 0.7.0 (development)
+# KeyFix 0.7.0 Beta
 
-This is a **local development build**. It has not been tagged or published as a GitHub Release.
+This is a **testing / pre-release build**. It is published on GitHub as a draft pre-release so it
+can be downloaded and tried, but it has not gone through the same real-world usage as earlier
+stable releases — see Known Limitations below before relying on it.
 
 0.7.0 completes the major intelligence features that were explicitly deferred in 0.6.0: real
 undo, local personal learning, an offline bigram context model, opt-in diagnostic logging, and
@@ -49,9 +51,11 @@ crash the app or delay typing.
 
 ### Dictionary cleaning
 A reviewed typo blacklist is excluded from the embedded English word list at load time, fixing
-`teh → the` (previously blocked because `teh` was itself present as a rare dictionary entry). A
-validation script (`scripts/validate-wordlists.ps1`) reports word counts, duplicates, invalid
-Unicode, and blacklist removals per language with checksums.
+`teh → the` (previously blocked because `teh` was itself present as a rare dictionary entry). The
+same blacklist mechanism removes 30 Arabic entries that mixed Arabic letters with ASCII digits or
+a stray Latin period (subtitle/OCR corpus artifacts, e.g. `و2`, `0000م`). A validation script
+(`scripts/validate-wordlists.ps1`) reports word counts, duplicates, invalid Unicode, and blacklist
+removals per language with checksums.
 
 ### Evaluation harness and benchmarks (dev tools, not shipped)
 - `tools/KeyFix.Evaluation` runs the real correction engine over a small labeled corpus
@@ -71,17 +75,21 @@ unconnected flags in 0.6.0) are now fully wired to working features.
 
 ## Known limitations (still not present)
 
+- This is a **testing / pre-release (Beta)** build, not a stable release.
 - No automated GUI/desktop-input test harness against real Windows applications (Notepad, etc.);
   verification in this environment is limited to unit tests, the evaluation harness, benchmarks,
-  and manual build/installer inspection. See the engineering report's manual smoke-test checklist.
+  and manual build/installer inspection. See the manual smoke-test checklist in the GitHub release
+  body and the engineering report.
 - The bigram asset only covers English; Persian/Arabic/German operate with a neutral (no-op)
   context score.
 - The evaluation corpus is intentionally small (a few dozen hand-written cases) and is not a
-  substitute for a large, statistically meaningful accuracy study.
+  substitute for a large, statistically meaningful accuracy study. Real-world accuracy has not
+  been independently measured.
+- The SymSpell spelling index for English currently costs roughly 1.2s / ~300MB to build (once,
+  lazily, per language) — a known, not-yet-optimized cost.
 - No trigram or statistical language model beyond the bigram scorer.
-- No German/Arabic-specific morphological analyzer beyond the conservative rule-based safeguards
-  already documented for 0.6.0 (compound words are still not marked incorrect just because the
-  full compound is absent from the flat dictionary).
+- Arabic support is limited to letter/diacritic normalization; no prefix/suffix/inflection
+  analysis like Persian's has been added.
+- No German-specific compound-word decomposition beyond not flagging an absent compound as wrong.
 
-This build was **not** pushed, tagged, or released. See the engineering report for the exact
-verification commands and results.
+See the engineering report for exact verification commands and results.

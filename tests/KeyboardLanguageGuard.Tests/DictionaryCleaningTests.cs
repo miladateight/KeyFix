@@ -33,4 +33,18 @@ public sealed class DictionaryCleaningTests
         Assert.Equal(CorrectionType.SpellingCorrection, decision.Type);
         Assert.Equal("the", decision.ReplacementText);
     }
+
+    [Theory]
+    [InlineData("و2")]      // Arabic "و" (and) with a digit misattached — subtitle/OCR artifact
+    [InlineData("0000م")]   // redacted-looking year/number fragment
+    [InlineData("ق.م")]     // legitimate abbreviation, but always classified as a protected token
+    [InlineData("أ.د")]     // legitimate abbreviation, same reasoning
+    public void Arabic_Script_Violation_Contaminants_Are_Removed(string entry) =>
+        Assert.False(_dictionary.Contains(LanguageKind.Arabic, entry));
+
+    [Theory]
+    [InlineData("السلام")]
+    [InlineData("كتاب")]
+    public void Legitimate_Arabic_Words_Are_Kept(string word) =>
+        Assert.True(_dictionary.Contains(LanguageKind.Arabic, word));
 }

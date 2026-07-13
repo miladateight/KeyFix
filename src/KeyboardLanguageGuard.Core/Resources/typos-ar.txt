@@ -1,2 +1,40 @@
-# Reviewed Arabic typo contaminants removed from the frequency dictionary at load time.
-# One lookup-form word per line; '#' = comment. Keep conservative.
+# Reviewed Arabic typo/script-violation contaminants removed from the frequency dictionary at
+# load time. One lookup-form word per line; '#' = comment. Keep conservative.
+#
+# These entries mix Arabic letters with ASCII digits or a Latin period, almost certainly from
+# subtitle/OCR artifacts in the source corpus (e.g. "و2".."و8" look like numbered list markers
+# with the digit misattached, "0000م" / "ال00" look like a redacted or OCR-mangled year). "ق.م"
+# (before-common-era abbreviation) and "أ.د" (professor-doctor abbreviation) are legitimate
+# abbreviations but are excluded here too: KeyFix's token classifier already treats any token
+# containing a period as a protected/acronym token, so a plain-word dictionary entry for them
+# provides no benefit and only risks matching as a false "known word" during spelling checks.
+0000م
+و00
+ال00
+0000ه
+و000
+و0000
+ب00
+000م
+ل00
+000ه
+ب000
+و3
+00م
+ال000
+م2
+و2
+و4
+و5
+و6
+000،000
+00،000
+عام0000
+00ه
+ق.م
+و7
+و8
+00سنة
+ج1
+أ.د
+و0.0

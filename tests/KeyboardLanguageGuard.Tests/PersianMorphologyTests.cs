@@ -22,12 +22,11 @@ public sealed class PersianMorphologyTests
         Assert.Equal(expected, result);
     }
 
-    [Fact]
-    public void Does_Not_Split_A_Real_Word()
-    {
-        // "میان" is a real word and must not be split into "می‌ان".
-        Assert.False(PersianMorphology.TryReconstruct("میان", _dictionary, PersianCorrectionStyle.PreserveUserStyle, out _));
-    }
+    [Theory]
+    [InlineData("میان")] // must not become "می‌ان"
+    [InlineData("میز")]  // must not become "می‌ز"
+    public void Does_Not_Split_A_Real_Word(string word) =>
+        Assert.False(PersianMorphology.TryReconstruct(word, _dictionary, PersianCorrectionStyle.PreserveUserStyle, out _));
 
     [Fact]
     public void Does_Not_Split_Salaam_Into_Unrelated_Words()
@@ -106,5 +105,19 @@ public sealed class PersianMorphologyTests
 
         Assert.Equal(CorrectionType.Normalization, decision.Type);
         Assert.Equal("خانه‌ام", decision.ReplacementText);
+    }
+
+    [Fact]
+    public void Engine_Spelling_Correction_Fixes_Persian_Typo()
+    {
+        // برنامع -> برنامه: an ordinary single-substitution Persian spelling mistake, distinct from
+        // half-space reconstruction. Exercises the SymSpell-backed spelling path for Persian.
+        var engine = new CorrectionDecisionEngine();
+        AppSettings settings = TestSettings.WithSpelling(auto: true);
+
+        CorrectionDecision decision = engine.Decide("برنامع", LanguageKind.Persian, settings);
+
+        Assert.Equal(CorrectionType.SpellingCorrection, decision.Type);
+        Assert.Equal("برنامه", decision.ReplacementText);
     }
 }

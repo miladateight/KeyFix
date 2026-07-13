@@ -10,9 +10,14 @@
 
 ### Diagnostics, quality & tooling
 - **Diagnostic logging** (opt-in, off by default): local, rotating, size-capped logs of safe structured metadata only (buckets, lengths, reason codes) — never raw text.
-- **Dictionary cleaning**: reviewed typo-contaminant blacklist removed at load (e.g. `teh`, `thier`, `alot`), so `teh → the` is now corrected. Added `scripts/validate-wordlists.ps1` producing a counts/checksum report.
+- **Dictionary cleaning**: reviewed typo-contaminant blacklist removed at load (e.g. `teh`, `thier`, `alot`), so `teh → the` is now corrected. The same mechanism removes 30 Arabic entries mixing Arabic letters with ASCII digits/a Latin period (subtitle/OCR artifacts, e.g. `و2`, `0000م`). Added `scripts/validate-wordlists.ps1` producing a counts/checksum report.
 - **Evaluation harness** (`tools/KeyFix.Evaluation`): runs the engine over a labeled corpus under `tools/KeyFix.Evaluation/EvaluationData` and reports precision/recall/F1/latency. Dev-only; not shipped.
 - **Benchmarks** (`tools/KeyFix.Benchmarks`): dependency-free timing/allocation micro-benchmarks. Dev-only; not shipped.
+
+### Additional fixes found during the pre-release audit
+- Removed 30 corpus-contaminated Arabic entries (Arabic letters mixed with ASCII digits or a stray Latin period — e.g. `و2`, `0000م`) via the same typo-blacklist mechanism used for English; validated with `scripts/validate-wordlists.ps1` and covered by new regression tests.
+- Minor allocation-reduction in `SymSpellIndex` construction (pre-sized term set); behavior-neutral, all tests unchanged.
+- Added missing direct-engine test coverage for `برنامع → برنامه` (ordinary Persian spelling correction) and `میز` (must-not-split), both confirmed already working correctly.
 
 ### Settings & UI
 - New settings: `EnableDiagnosticLogging`, `PersianCorrectionStyle`; added UI toggles for Undo, personal learning, diagnostic logging, and Persian style.
