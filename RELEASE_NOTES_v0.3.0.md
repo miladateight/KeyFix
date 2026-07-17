@@ -13,26 +13,16 @@ KeyFix is a Windows tray app that detects likely wrong keyboard layout typing an
 - Added keyboard-hook startup failure notification.
 - Added more tests for Persian, Arabic, and German layout detection.
 - Made GitHub Actions publish a self-contained Windows build.
-- Added SHA256 generation for the installer.
+- Added SHA-256 generation for the installer.
 
 ## After Installing
 
 Open KeyFix from the Windows tray, go to **Settings**, and keep only the languages you actually use enabled. Disable every unused language. This improves detection accuracy and reduces unnecessary corrections.
 
-## Download
+## Release Assets
 
-Upload these files to this release:
-
-```text
-KeyFixSetup-0.3.0.exe
-KeyFixSetup-0.3.0.exe.sha256
-```
-
-Local build path:
-
-```text
-D:\Project\Github\keyboard-language-guard\artifacts\installer\KeyFixSetup-0.3.0.exe
-```
+- `KeyFixSetup-0.3.0.exe`
+- `KeyFixSetup-0.3.0.exe.sha256`
 
 ## Privacy
 
@@ -46,5 +36,5 @@ KeyFix is local-only:
 ## Known Notes
 
 - The installer is not code-signed yet, so Windows SmartScreen may show a warning.
-- German and English detection can be harder than Persian/Arabic vs English because both are Latin-based.
+- German and English detection can be harder than Persian or Arabic versus English because both are Latin-based.
 - For best results, enable only the languages you use in Settings.
