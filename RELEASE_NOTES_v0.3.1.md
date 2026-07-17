@@ -18,24 +18,20 @@ KeyFix 0.3.1 improves the first-launch experience and uninstall cleanup.
   - removes legacy KeyboardLanguageGuard settings
   - removes the Windows startup registry value
   - removes leftover KeyFix app data folders
-- Packaging now generates a SHA256 file for the newest installer automatically.
+- Packaging now generates a SHA-256 file for the newest installer automatically.
 - Fixed automatic switching so KeyFix still changes to the detected target language even if text replacement fails in the focused app.
 - Made clipboard paste the primary replacement method for better compatibility with common Windows apps.
-- Removed user-editable detection threshold/minimum character controls.
-- Added safer internal per-language detection rules to reduce false positives for normal Persian/Arabic text and mixed-script partial words.
+- Removed user-editable detection threshold and minimum character controls.
+- Added safer internal per-language detection rules to reduce false positives for normal Persian or Arabic text and mixed-script partial words.
 
 ## After Installing
 
 On first launch, KeyFix opens the setup wizard. Enable only the languages you actually use. For example, if you only use Persian and English, keep Persian and English enabled and disable Arabic and German.
 
-## Download
+## Release Assets
 
-Upload these files to this release:
-
-```text
-KeyFixSetup-0.3.1.exe
-KeyFixSetup-0.3.1.exe.sha256
-```
+- `KeyFixSetup-0.3.1.exe`
+- `KeyFixSetup-0.3.1.exe.sha256`
 
 ## Privacy
 
