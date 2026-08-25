@@ -197,6 +197,16 @@ After installing:
 5. Disable every unused language.
 6. Choose whether KeyFix should alert only, suggest, or automatically switch and correct text.
 
+### Verifying the download
+
+A program that installs a keyboard hook is worth checking before you run it. Every release is built from a tag by GitHub Actions, never on a developer machine, and carries a signed statement of the commit it came from:
+
+```bash
+gh attestation verify KeyFixSetup-1.0.0.exe --repo miladateight/KeyFix
+```
+
+Each release also publishes a SHA-256 checksum and a CycloneDX SBOM of everything the build pulled in. How signing and release approval work — and who can authorise them — is in the [code signing policy](docs/CODE_SIGNING_POLICY.md).
+
 ## Privacy
 
 KeyFix is designed to avoid storing user text.
