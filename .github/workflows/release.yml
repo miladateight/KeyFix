@@ -1,12 +1,21 @@
 name: release
 
+# Cuts the release from a tag: builds and tests on a clean runner, compiles the
+# installer, records what went into it, and has GitHub attest that this exact
+# file came out of this exact commit.
 on:
   push:
     tags:
       - "v*"
 
 permissions:
-  contents: write
+  contents: write      # create the release
+  id-token: write      # sign the provenance statement
+  attestations: write  # record it against this repository
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -21,6 +30,33 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      # The version is declared in three hand-edited places. A tag that
+      # disagrees with any of them produces an installer whose filename, About
+      # dialog and checksum do not all describe the same build, so stop here
+      # rather than publish the mismatch.
+      - name: Verify tag matches the declared version
+        id: version
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+
+          $files = [ordered]@{
+            "src/KeyboardLanguageGuard.App/KeyboardLanguageGuard.App.csproj" = '<Version>([^<]+)</Version>'
+            "src/KeyboardLanguageGuard.Core/KeyboardLanguageGuard.Core.csproj" = '<Version>([^<]+)</Version>'
+            "installer/KeyboardLanguageGuard.iss" = '^\s*#define\s+MyAppVersion\s+"([^"]+)"'
+          }
+
+          foreach ($file in $files.Keys) {
+            $match = Select-String -Path $file -Pattern $files[$file] | Select-Object -First 1
+            if (-not $match) { throw "Could not read a version out of $file." }
+
+            $declared = $match.Matches[0].Groups[1].Value
+            if ($declared -ne $version) { throw "Tag is $version but $file says $declared." }
+          }
+
+          Write-Output "Releasing $version."
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
       - name: Build
         run: dotnet build KeyboardLanguageGuard.sln --configuration Release
 
@@ -33,13 +69,31 @@ jobs:
       - name: Package installer
         run: powershell -ExecutionPolicy Bypass -File scripts/package-installer.ps1
 
+      # What the installer is made of, in a format vulnerability scanners read.
+      - name: Generate SBOM
+        shell: pwsh
+        run: |
+          dotnet tool install --global CycloneDX --version 6.2.0
+          dotnet CycloneDX KeyboardLanguageGuard.sln `
+            --output artifacts/installer `
+            --output-format Json `
+            --filename "KeyFixSetup-${{ steps.version.outputs.version }}.cdx.json" `
+            --exclude-test-projects `
+            --set-name "KeyFix" `
+            --set-version "${{ steps.version.outputs.version }}"
+
+      # Lets anyone confirm the installer they downloaded was built here:
+      #   gh attestation verify <installer> --repo ${{ github.repository }}
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: artifacts/installer/KeyFixSetup-${{ steps.version.outputs.version }}.exe
+
       - name: Collect release notes
         id: notes
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"
-          $version = $tag.TrimStart("v")
-          $notesFile = "docs/release-notes/v$version.md"
+          $notesFile = "docs/release-notes/v${{ steps.version.outputs.version }}.md"
           if (Test-Path $notesFile) {
             "notes_file=$notesFile" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           } else {
@@ -54,3 +108,4 @@ jobs:
           files: |
             artifacts/installer/KeyFixSetup-*.exe
             artifacts/installer/KeyFixSetup-*.exe.sha256
+            artifacts/installer/*.cdx.json
