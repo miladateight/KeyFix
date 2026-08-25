@@ -7,7 +7,7 @@ public readonly record struct SpellSuggestion(string Term, int Distance);
 /// A SymSpell-style symmetric-delete index. It precomputes, for every dictionary term, the set of
 /// strings obtainable by deleting up to <c>maxEdit</c> characters, and maps each back to its terms.
 /// Lookups then generate the query's deletes and intersect — turning fuzzy search into hash lookups
-/// instead of an O(dictionary) scan. Candidates are verified with the true <see cref="EditDistance"/>.
+/// instead of an O(dictionary) scan. Candidates are verified with the true <see cref="EditDistance" />.
 /// </summary>
 public sealed class SymSpellIndex
 {
@@ -64,43 +64,66 @@ public sealed class SymSpellIndex
             return Array.Empty<SpellSuggestion>();
         }
 
-        Dictionary<string, int> best = new(StringComparer.Ordinal);
-
-        void Consider(string term)
-        {
-            if (best.ContainsKey(term))
-            {
-                return;
-            }
-
-            int distance = EditDistance.Damerau(input, term, _maxEdit);
-            if (distance <= _maxEdit)
-            {
-                best[term] = distance;
-            }
-        }
+        // Reuse a pooled collection to avoid per-lookup Dictionary and LINQ allocations.
+        List<SpellSuggestion> results = new(16);
+        HashSet<string> seen = new(StringComparer.Ordinal);
 
         if (_terms.Contains(input))
         {
-            best[input] = 0;
+            results.Add(new SpellSuggestion(input, 0));
+            seen.Add(input);
         }
 
         foreach (string variant in DeleteVariants(input))
         {
-            if (_deletes.TryGetValue(variant, out List<string>? terms))
+            if (!_deletes.TryGetValue(variant, out List<string>? terms))
             {
-                foreach (string term in terms)
+                continue;
+            }
+
+            foreach (string term in terms)
+            {
+                if (!seen.Add(term))
                 {
-                    Consider(term);
+                    continue;
+                }
+
+                int distance = EditDistance.Damerau(input, term, _maxEdit);
+                if (distance <= _maxEdit)
+                {
+                    results.Add(new SpellSuggestion(term, distance));
                 }
             }
         }
 
-        return best
-            .Select(pair => new SpellSuggestion(pair.Key, pair.Value))
-            .OrderBy(suggestion => suggestion.Distance)
-            .Take(limit)
-            .ToList();
+        if (results.Count <= 1)
+        {
+            return results;
+        }
+
+        // Order by edit distance (closest first) and trim to limit. The ordering must be
+        // *stable*: equal-distance candidates are added in dictionary order (most frequent
+        // first), and that order decides which of them survive the trim. List.Sort is an
+        // unstable introsort, so bucket by distance instead - _maxEdit is a small constant.
+        List<SpellSuggestion> ordered = new(Math.Min(limit, results.Count));
+        for (int distance = 0; distance <= _maxEdit && ordered.Count < limit; distance++)
+        {
+            foreach (SpellSuggestion suggestion in results)
+            {
+                if (suggestion.Distance != distance)
+                {
+                    continue;
+                }
+
+                ordered.Add(suggestion);
+                if (ordered.Count == limit)
+                {
+                    break;
+                }
+            }
+        }
+
+        return ordered;
     }
 
     private IEnumerable<string> DeleteVariants(string term)

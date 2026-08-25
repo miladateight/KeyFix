@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
+using KeyboardLanguageGuard.Core.Input;
 using KeyboardLanguageGuard.Core.Settings;
 
 namespace KeyboardLanguageGuard.App.UI;
@@ -21,6 +22,11 @@ public sealed class SettingsForm : Form
     private readonly CheckBox _enableUndo = new() { Text = "Undo an automatic correction by pressing Backspace right after it", AutoSize = true };
     private readonly CheckBox _enablePersonalLearning = new() { Text = "Learn from my accepted and undone corrections (stored locally)", AutoSize = true };
     private readonly CheckBox _enableDiagnosticLogging = new() { Text = "Write local diagnostic logs (metadata only, never your text)", AutoSize = true };
+    private readonly CheckBox _enableAutoCorrect = new() { Text = "Auto-correct common misspellings (e.g. recieve → receive, شلام → سلام)", AutoSize = true };
+    private readonly CheckBox _checkForUpdates = new() { Text = "Check for updates once a day", AutoSize = true };
+    private readonly CheckBox _enableQrCodeHotkey = new() { Text = "Enable the global QR-code shortcut", AutoSize = true };
+    private readonly TextBox _updateInterval = new() { Width = 60 };
+    private readonly TextBox _qrCodeHotkey = new() { Width = 160 };
     private readonly ComboBox _aggressiveness = new() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly ComboBox _persianStyle = new() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly CheckBox _launchAtStartup = new() { Text = "Start KeyFix when Windows starts", AutoSize = true };
@@ -61,7 +67,7 @@ public sealed class SettingsForm : Form
         };
 
         root.RowStyles.Clear();
-        for (int index = 0; index < 12; index++)
+        for (int index = 0; index < 13; index++)
         {
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         }
@@ -86,6 +92,7 @@ public sealed class SettingsForm : Form
             _enableWrongLayoutDetection,
             _enableSpellingDetection,
             _enableSpellingAutoCorrection,
+            _enableAutoCorrect,
             _enableNormalizationSuggestions,
             _enableUndo,
             _enablePersonalLearning,
@@ -95,10 +102,19 @@ public sealed class SettingsForm : Form
         correctionsPanel.Controls.Add(Field("Persian style", _persianStyle));
         corrections.Controls.Add(correctionsPanel);
 
+        GroupBox updatesAndQr = new() { Text = "Updates and shortcuts", Width = 535, Height = 110, AutoSize = true };
+        FlowLayoutPanel updatesQrPanel = new() { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, Padding = new Padding(10), AutoSize = true };
+        updatesQrPanel.Controls.Add(_checkForUpdates);
+        updatesQrPanel.Controls.Add(Field("Update check interval (hours)", _updateInterval));
+        updatesQrPanel.Controls.Add(_enableQrCodeHotkey);
+        updatesQrPanel.Controls.Add(Field("QR-code hotkey", _qrCodeHotkey));
+        updatesAndQr.Controls.Add(updatesQrPanel);
+
         root.Controls.Add(intro);
         root.Controls.Add(languages);
         root.Controls.Add(Field("Mode", _mode));
         root.Controls.Add(corrections);
+        root.Controls.Add(updatesAndQr);
         root.Controls.Add(_playSound);
         root.Controls.Add(_showNotification);
         root.Controls.Add(_autoCorrectTypedText);
@@ -182,6 +198,11 @@ public sealed class SettingsForm : Form
         _enableUndo.Checked = Settings.EnableUndo;
         _enablePersonalLearning.Checked = Settings.EnablePersonalLearning;
         _enableDiagnosticLogging.Checked = Settings.EnableDiagnosticLogging;
+        _enableAutoCorrect.Checked = Settings.EnableAutoCorrect;
+        _checkForUpdates.Checked = Settings.CheckForUpdates;
+        _enableQrCodeHotkey.Checked = Settings.EnableQrCodeHotkey;
+        _updateInterval.Text = Settings.UpdateCheckIntervalHours.ToString();
+        _qrCodeHotkey.Text = Settings.QrCodeHotkey;
         _persianStyle.SelectedItem = Settings.PersianCorrectionStyle.ToString();
         _launchAtStartup.Checked = Settings.LaunchAtStartup;
         _soundPath.Text = Settings.CustomSoundPath ?? string.Empty;
@@ -201,6 +222,19 @@ public sealed class SettingsForm : Form
             return;
         }
 
+        if (!HotkeyDefinition.TryParse(_qrCodeHotkey.Text, out HotkeyDefinition hotkey))
+        {
+            MessageBox.Show(
+                this,
+                "The QR-code hotkey needs at least one modifier and one key, for example " +
+                "\"Ctrl+Shift+Q\" or \"Alt+F9\".",
+                "KeyFix",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            _qrCodeHotkey.Focus();
+            return;
+        }
+
         Settings.SettingsVersion = AppSettings.CurrentSettingsVersion;
         Settings.FirstRunCompleted = true;
         Settings.Mode = Enum.Parse<DetectionMode>(_mode.SelectedItem?.ToString() ?? nameof(DetectionMode.AutoSwitch));
@@ -216,6 +250,11 @@ public sealed class SettingsForm : Form
         Settings.EnableUndo = _enableUndo.Checked;
         Settings.EnablePersonalLearning = _enablePersonalLearning.Checked;
         Settings.EnableDiagnosticLogging = _enableDiagnosticLogging.Checked;
+        Settings.EnableAutoCorrect = _enableAutoCorrect.Checked;
+        Settings.CheckForUpdates = _checkForUpdates.Checked;
+        Settings.UpdateCheckIntervalHours = int.TryParse(_updateInterval.Text, out int interval) ? Math.Max(1, interval) : 24;
+        Settings.EnableQrCodeHotkey = _enableQrCodeHotkey.Checked;
+        Settings.QrCodeHotkey = hotkey.ToString();
         Settings.PersianCorrectionStyle = Enum.Parse<PersianCorrectionStyle>(
             _persianStyle.SelectedItem?.ToString() ?? nameof(PersianCorrectionStyle.PreserveUserStyle));
         Settings.LaunchAtStartup = _launchAtStartup.Checked;
@@ -260,6 +299,11 @@ public sealed class SettingsForm : Form
             EnablePersonalLearning = settings.EnablePersonalLearning,
             EnableUndo = settings.EnableUndo,
             EnableDiagnosticLogging = settings.EnableDiagnosticLogging,
+            EnableAutoCorrect = settings.EnableAutoCorrect,
+            CheckForUpdates = settings.CheckForUpdates,
+            UpdateCheckIntervalHours = settings.UpdateCheckIntervalHours,
+            EnableQrCodeHotkey = settings.EnableQrCodeHotkey,
+            QrCodeHotkey = settings.QrCodeHotkey,
             CorrectionAggressiveness = settings.CorrectionAggressiveness,
             PersianCorrectionStyle = settings.PersianCorrectionStyle,
             ShowCorrectionNotification = settings.ShowCorrectionNotification,

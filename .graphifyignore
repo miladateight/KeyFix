@@ -22,3 +22,163 @@ graphify-out/
 *.graphify.tmp
 *.graphify.log
 AGENTS.md
+
+# BEGIN AT8 GRAPHIFY V2
+# Generated graph output and VCS internals
+graphify-out/
+**/graphify-out/
+.git/
+**/.git/
+
+# Assistant runtime/config folders are not project source
+.claude/
+.codex/
+.agents/
+.tools/
+**/.claude/
+**/.codex/
+**/.agents/
+**/.tools/
+
+# Dependency and language caches
+node_modules/
+**/node_modules/
+.venv/
+venv/
+**/.venv/
+**/venv/
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.gradle/
+.kotlin/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.gradle/
+**/.kotlin/
+target/
+**/target/
+
+# Build, packaging, generated and runtime noise
+build/
+build-*/
+dist/
+dist-*/
+artifacts/
+coverage/
+htmlcov/
+logs/
+output/
+outputs/
+downloads/
+temp/
+tmp/
+backups/
+*.egg-info/
+**/build/
+**/build-*/
+**/dist/
+**/dist-*/
+**/artifacts/
+**/coverage/
+**/htmlcov/
+**/logs/
+**/output/
+**/outputs/
+**/downloads/
+**/temp/
+**/tmp/
+**/backups/
+**/*.egg-info/
+
+# Releases copied from the main source tree
+*-Public-Release/
+**/*-Public-Release/
+
+# Third-party code vendored into the tree is not our source
+vendor/
+**/vendor/
+third_party/
+**/third_party/
+Pods/
+**/Pods/
+bower_components/
+**/bower_components/
+
+# CMS payloads: plugins and uploads are vendor content, not project code.
+# wp-content/themes is NOT ignored - the custom theme is usually the whole
+# first-party codebase. Exclude vendor parent themes per project instead.
+**/wp-content/plugins/
+**/wp-content/uploads/
+**/wp-content/languages/
+**/wp-content/upgrade/
+**/wp-includes/
+**/wp-admin/
+
+# Translation and locale data are strings, not structure
+locale/
+locales/
+lang/
+languages/
+translations/
+i18n/
+**/locale/
+**/locales/
+**/lang/
+**/languages/
+**/translations/
+**/i18n/
+*.po
+*.mo
+*.pot
+**/*.po
+**/*.mo
+**/*.pot
+
+# Minified, bundled and map files add nodes without adding meaning
+*.min.js
+*.min.css
+*.bundle.js
+*.map
+**/*.min.js
+**/*.min.css
+**/*.bundle.js
+**/*.map
+
+# Lockfiles and generated manifests
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+composer.lock
+Cargo.lock
+poetry.lock
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+**/composer.lock
+**/Cargo.lock
+**/poetry.lock
+
+# Secrets, private sessions, keys and mutable application data
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+licensing-keys/
+**/licensing-keys/
+data/private/
+**/data/private/
+*.pem
+*.key
+*.pfx
+*.p12
+**/*.pem
+**/*.key
+**/*.pfx
+**/*.p12
+# END AT8 GRAPHIFY V2

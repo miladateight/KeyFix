@@ -75,4 +75,35 @@ public sealed class SettingsMigrationTests
         bool changed = SettingsMigrator.Migrate(settings);
         Assert.False(changed);
     }
+
+    [Fact]
+    public void V8_Upgrade_Adds_Update_And_Qr_Defaults()
+    {
+        AppSettings settings = new()
+        {
+            SettingsVersion = 8,
+            Mode = DetectionMode.AlertOnly,
+            FirstRunCompleted = true
+        };
+
+        SettingsMigrator.Migrate(settings);
+
+        Assert.Equal(AppSettings.CurrentSettingsVersion, settings.SettingsVersion);
+        Assert.True(settings.CheckForUpdates);
+        Assert.Equal(24, settings.UpdateCheckIntervalHours);
+        Assert.Equal("Ctrl+Shift+Q", settings.QrCodeHotkey);
+        Assert.False(settings.EnableAutoCorrect);
+        Assert.Equal(DetectionMode.AlertOnly, settings.Mode); // choice preserved
+    }
+
+    [Fact]
+    public void V9_Fresh_Settings_Have_Expected_Defaults()
+    {
+        AppSettings settings = new();
+
+        Assert.True(settings.CheckForUpdates);
+        Assert.Equal(24, settings.UpdateCheckIntervalHours);
+        Assert.Equal("Ctrl+Shift+Q", settings.QrCodeHotkey);
+        Assert.False(settings.EnableAutoCorrect);
+    }
 }

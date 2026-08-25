@@ -5,6 +5,7 @@ using KeyboardLanguageGuard.Core.Language;
 using KeyboardLanguageGuard.Core.Layout;
 using KeyboardLanguageGuard.Core.Settings;
 using KeyboardLanguageGuard.Core.Spelling;
+using KeyboardLanguageGuard.Core.Text;
 
 namespace KeyFix.Benchmarks;
 
@@ -41,6 +42,21 @@ internal static class Program
         Measure("protected fast-path (URL)", 50_000, () => engine.Decide("https://github.com/x", LanguageKind.English, spelling));
         Measure("bigram lookup", 200_000, () => bigram.ContextScore(LanguageKind.English, "read", "the", null));
         Measure("pathological long token", 5_000, () => engine.Decide(new string('a', 40), LanguageKind.English, spelling));
+
+        TextRingBuffer buffer = new();
+        Measure("text ring buffer (mixed)", 50_000, () =>
+        {
+            buffer.Append('h');
+            buffer.Append('e');
+            buffer.Append('l');
+            buffer.Append('l');
+            buffer.Append('o');
+            _ = buffer.CurrentCorrectionScope;
+            _ = buffer.PreviousToken;
+            _ = buffer.TrailingWhitespace;
+            buffer.Backspace();
+            buffer.Clear();
+        });
 
         // Rapid sequence of distinct tokens.
         string[] seq = ["teh", "recieve", "wierd", "hello", "world", "freind", "man", "the"];

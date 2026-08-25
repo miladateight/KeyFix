@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text;
 using KeyboardLanguageGuard.Core.Settings;
@@ -8,17 +9,25 @@ namespace KeyboardLanguageGuard.Core.Dictionaries;
 /// <summary>
 /// Loads the embedded, frequency-ordered word lists (one word per line, most frequent first) and
 /// exposes both membership and frequency rank. Normalization goes through <see cref="Normalizer"/>
-/// so stored keys and query keys always match.
+/// so stored keys and query keys always match. Languages are loaded lazily so startup only pays for
+/// the languages the user actually uses.
 /// </summary>
 public sealed class FrequencyDictionary : IFrequencyDictionary
 {
-    private readonly IReadOnlyDictionary<LanguageKind, LanguageEntry> _entries;
+    private readonly ConcurrentDictionary<LanguageKind, Lazy<LanguageEntry>> _entries;
 
-    public FrequencyDictionary() : this(LoadFromEmbeddedResources()) { }
+    public FrequencyDictionary()
+    {
+        _entries = CreateLazyEntries();
+    }
 
     public FrequencyDictionary(IReadOnlyDictionary<LanguageKind, LanguageEntry> entries)
     {
-        _entries = entries;
+        _entries = new ConcurrentDictionary<LanguageKind, Lazy<LanguageEntry>>();
+        foreach ((LanguageKind language, LanguageEntry entry) in entries)
+        {
+            _entries[language] = new Lazy<LanguageEntry>(entry);
+        }
     }
 
     public bool Contains(LanguageKind language, string word)
@@ -28,48 +37,60 @@ public sealed class FrequencyDictionary : IFrequencyDictionary
             return false;
         }
 
-        return _entries.TryGetValue(language, out LanguageEntry? entry) &&
-               entry.Ranks.ContainsKey(Normalizer.ToLookup(language, word));
+        return GetEntry(language).Ranks.ContainsKey(Normalizer.ToLookup(language, word));
     }
 
-    public int Count(LanguageKind language) =>
-        _entries.TryGetValue(language, out LanguageEntry? entry) ? entry.Ranks.Count : 0;
+    public int Count(LanguageKind language) => GetEntry(language).Ranks.Count;
 
     public int Rank(LanguageKind language, string word)
     {
-        if (string.IsNullOrWhiteSpace(word) || !_entries.TryGetValue(language, out LanguageEntry? entry))
+        if (string.IsNullOrWhiteSpace(word))
         {
             return int.MaxValue;
         }
 
-        return entry.Ranks.TryGetValue(Normalizer.ToLookup(language, word), out int rank) ? rank : int.MaxValue;
+        return GetEntry(language).Ranks.TryGetValue(Normalizer.ToLookup(language, word), out int rank) ? rank : int.MaxValue;
     }
 
-    public IReadOnlyList<string> Words(LanguageKind language) =>
-        _entries.TryGetValue(language, out LanguageEntry? entry) ? entry.Ordered : Array.Empty<string>();
+    public IReadOnlyList<string> Words(LanguageKind language) => GetEntry(language).Ordered;
 
-    private static IReadOnlyDictionary<LanguageKind, LanguageEntry> LoadFromEmbeddedResources()
+    private LanguageEntry GetEntry(LanguageKind language)
     {
-        return new Dictionary<LanguageKind, LanguageEntry>
+        return _entries.TryGetValue(language, out Lazy<LanguageEntry>? lazy) ? lazy.Value : LanguageEntry.Empty;
+    }
+
+    private static ConcurrentDictionary<LanguageKind, Lazy<LanguageEntry>> CreateLazyEntries()
+    {
+        return new ConcurrentDictionary<LanguageKind, Lazy<LanguageEntry>>
         {
-            [LanguageKind.Persian] = LoadResource("words-fa.txt", "typos-fa.txt", LanguageKind.Persian),
-            [LanguageKind.English] = LoadResource("words-en.txt", "typos-en.txt", LanguageKind.English),
-            [LanguageKind.German] = LoadResource("words-de.txt", "typos-de.txt", LanguageKind.German),
-            [LanguageKind.Arabic] = LoadResource("words-ar.txt", "typos-ar.txt", LanguageKind.Arabic)
+            [LanguageKind.Persian] = new Lazy<LanguageEntry>(() => LoadResource("words-fa.txt", "typos-fa.txt", "words-extra-fa.txt", LanguageKind.Persian)),
+            [LanguageKind.English] = new Lazy<LanguageEntry>(() => LoadResource("words-en.txt", "typos-en.txt", "words-extra-en.txt", LanguageKind.English)),
+            [LanguageKind.German] = new Lazy<LanguageEntry>(() => LoadResource("words-de.txt", "typos-de.txt", "words-extra-de.txt", LanguageKind.German)),
+            [LanguageKind.Arabic] = new Lazy<LanguageEntry>(() => LoadResource("words-ar.txt", "typos-ar.txt", "words-extra-ar.txt", LanguageKind.Arabic))
         };
     }
 
-    private static LanguageEntry LoadResource(string fileName, string blacklistFileName, LanguageKind language)
+    private static LanguageEntry LoadResource(string fileName, string blacklistFileName, string extraFileName, LanguageKind language)
     {
         Dictionary<string, int> ranks = new(StringComparer.Ordinal);
         List<string> ordered = new();
-
         HashSet<string> blacklist = LoadBlacklist(blacklistFileName, language);
 
+        // The main list is frequency-ordered, so it must be loaded first: rank is the insertion
+        // position and the first occurrence of a lookup key wins. The extra list is supplementary
+        // and only contributes words the main list is missing, ranked after it.
+        LoadWordList(fileName, language, blacklist, ranks, ordered);
+        LoadWordList(extraFileName, language, blacklist, ranks, ordered);
+
+        return new LanguageEntry(ranks, ordered);
+    }
+
+    private static void LoadWordList(string fileName, LanguageKind language, HashSet<string> blacklist, Dictionary<string, int> ranks, List<string> ordered)
+    {
         using StreamReader? reader = OpenResource(fileName);
         if (reader is null)
         {
-            return new LanguageEntry(ranks, ordered);
+            return;
         }
 
         string? line;
@@ -91,8 +112,6 @@ public sealed class FrequencyDictionary : IFrequencyDictionary
                 ordered.Add(word);
             }
         }
-
-        return new LanguageEntry(ranks, ordered);
     }
 
     private static HashSet<string> LoadBlacklist(string blacklistFileName, LanguageKind language)
@@ -143,6 +162,10 @@ public sealed class FrequencyDictionary : IFrequencyDictionary
             Ranks = ranks;
             Ordered = ordered;
         }
+
+        public static LanguageEntry Empty { get; } = new(
+            new Dictionary<string, int>(StringComparer.Ordinal),
+            Array.Empty<string>());
 
         public IReadOnlyDictionary<string, int> Ranks { get; }
 

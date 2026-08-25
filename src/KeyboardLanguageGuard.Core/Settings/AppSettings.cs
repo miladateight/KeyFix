@@ -8,7 +8,7 @@ namespace KeyboardLanguageGuard.Core.Settings;
 public sealed class AppSettings
 {
     /// <summary>Current schema version. Bump this and add a migration branch when fields change.</summary>
-    public const int CurrentSettingsVersion = 8;
+    public const int CurrentSettingsVersion = 9;
 
     public int SettingsVersion { get; set; } = CurrentSettingsVersion;
 
@@ -94,6 +94,23 @@ public sealed class AppSettings
 
     /// <summary>Opt-in local diagnostic logging of safe, structured metadata (never raw text). Off by default.</summary>
     public bool EnableDiagnosticLogging { get; set; }
+
+    // --- 1.0.0 features ----------------------------------------------------------------------
+
+    /// <summary>Automatically correct high-confidence single-token spelling mistakes like recieve → receive.</summary>
+    public bool EnableAutoCorrect { get; set; }
+
+    /// <summary>Periodically check GitHub Releases for newer versions and show a tray notification.</summary>
+    public bool CheckForUpdates { get; set; } = true;
+
+    /// <summary>Hours between automatic update checks. Minimum 1.</summary>
+    public int UpdateCheckIntervalHours { get; set; } = 24;
+
+    /// <summary>Whether the global QR-code shortcut is active at all.</summary>
+    public bool EnableQrCodeHotkey { get; set; } = true;
+
+    /// <summary>Global shortcut for generating a QR code from the selected text.</summary>
+    public string QrCodeHotkey { get; set; } = "Ctrl+Shift+Q";
 
     public List<LanguageProfile> Languages { get; set; } = new()
     {

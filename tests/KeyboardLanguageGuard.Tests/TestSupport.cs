@@ -63,4 +63,14 @@ public static class TestSettings
         settings.CorrectionAggressiveness = aggressiveness;
         return settings;
     }
+
+    public static AppSettings WithAutoCorrect(CorrectionAggressiveness aggressiveness = CorrectionAggressiveness.Conservative)
+    {
+        AppSettings settings = AllLanguages();
+        settings.EnableAutoCorrect = true;
+        settings.EnableSpellingDetection = false;
+        settings.EnableSpellingAutoCorrection = false;
+        settings.CorrectionAggressiveness = aggressiveness;
+        return settings;
+    }
 }

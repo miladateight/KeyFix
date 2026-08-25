@@ -12,6 +12,7 @@ public sealed class CorrectionOptions
     public bool EnableWrongLayoutAutoCorrection { get; init; } = true;
     public bool EnableSpellingDetection { get; init; }
     public bool EnableSpellingAutoCorrection { get; init; }
+    public bool EnableAutoCorrect { get; init; }
     public bool EnableNormalizationSuggestions { get; init; }
     public CorrectionAggressiveness Aggressiveness { get; init; } = CorrectionAggressiveness.Conservative;
 
@@ -21,6 +22,7 @@ public sealed class CorrectionOptions
         EnableWrongLayoutAutoCorrection = settings.EnableWrongLayoutAutoCorrection,
         EnableSpellingDetection = settings.EnableSpellingDetection,
         EnableSpellingAutoCorrection = settings.EnableSpellingAutoCorrection,
+        EnableAutoCorrect = settings.EnableAutoCorrect,
         EnableNormalizationSuggestions = settings.EnableNormalizationSuggestions,
         Aggressiveness = settings.CorrectionAggressiveness
     };

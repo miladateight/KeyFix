@@ -4,12 +4,15 @@ namespace KeyboardLanguageGuard.Core.Text;
 
 /// <summary>
 /// A short rolling buffer of typed characters. Used by the tray app to keep the most recent word
-/// (and its trailing whitespace) so the detector can decide what to rewrite after Space.
+/// (and its trailing whitespace) so the detector can decide what to rewrite after Space. The
+/// snapshot string is cached and invalidated on mutation so repeated property reads do not allocate.
 /// </summary>
 public sealed class TextRingBuffer
 {
     private readonly int _capacity;
     private readonly StringBuilder _text;
+    private string? _snapshot;
+    private bool _snapshotDirty;
 
     public TextRingBuffer(int capacity = 48)
     {
@@ -18,7 +21,7 @@ public sealed class TextRingBuffer
     }
 
     /// <summary>The full text currently held by the buffer.</summary>
-    public string Text => _text.ToString();
+    public string Text => Snapshot;
 
     /// <summary>
     /// The previous word (the text between the last whitespace boundary and the cursor), trimmed
@@ -28,7 +31,7 @@ public sealed class TextRingBuffer
     {
         get
         {
-            string value = _text.ToString();
+            ReadOnlySpan<char> value = Snapshot.AsSpan();
             int end = value.Length;
             while (end > 0 && char.IsWhiteSpace(value[end - 1]))
             {
@@ -46,7 +49,7 @@ public sealed class TextRingBuffer
                 start--;
             }
 
-            return value[start..end];
+            return value[start..end].ToString();
         }
     }
 
@@ -58,7 +61,7 @@ public sealed class TextRingBuffer
     {
         get
         {
-            string value = _text.ToString();
+            ReadOnlySpan<char> value = Snapshot.AsSpan();
             int end = value.Length;
             while (end > 0 && char.IsWhiteSpace(value[end - 1])) end--;      // skip trailing ws
             int scopeStart = end;
@@ -68,7 +71,7 @@ public sealed class TextRingBuffer
             if (prevEnd == 0) return string.Empty;
             int prevStart = prevEnd;
             while (prevStart > 0 && !char.IsWhiteSpace(value[prevStart - 1])) prevStart--;
-            return value[prevStart..prevEnd];
+            return value[prevStart..prevEnd].ToString();
         }
     }
 
@@ -77,14 +80,28 @@ public sealed class TextRingBuffer
     {
         get
         {
-            string value = _text.ToString();
+            ReadOnlySpan<char> value = Snapshot.AsSpan();
             int start = value.Length;
             while (start > 0 && char.IsWhiteSpace(value[start - 1]))
             {
                 start--;
             }
 
-            return value[start..];
+            return value[start..].ToString();
+        }
+    }
+
+    private string Snapshot
+    {
+        get
+        {
+            if (_snapshotDirty || _snapshot is null)
+            {
+                _snapshot = _text.ToString();
+                _snapshotDirty = false;
+            }
+
+            return _snapshot;
         }
     }
 
@@ -97,6 +114,7 @@ public sealed class TextRingBuffer
         }
 
         _text.Append(value);
+        _snapshotDirty = true;
         Trim();
     }
 
@@ -106,11 +124,16 @@ public sealed class TextRingBuffer
         if (_text.Length > 0)
         {
             _text.Remove(_text.Length - 1, 1);
+            _snapshotDirty = true;
         }
     }
 
     /// <summary>Removes everything from the buffer.</summary>
-    public void Clear() => _text.Clear();
+    public void Clear()
+    {
+        _text.Clear();
+        _snapshotDirty = true;
+    }
 
     private void Trim()
     {
@@ -120,5 +143,6 @@ public sealed class TextRingBuffer
         }
 
         _text.Remove(0, _text.Length - _capacity);
+        _snapshotDirty = true;
     }
 }

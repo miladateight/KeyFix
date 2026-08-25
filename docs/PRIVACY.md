@@ -17,7 +17,7 @@ The app stores settings and, if you use them, a personal dictionary and local le
 %APPDATA%\KeyFix\logs\keyfix-*.log     (only if diagnostic logging is explicitly enabled)
 ```
 
-Settings include enabled languages, detection mode, correction options (including whether spelling auto-correction is enabled — it is off by default), the correction aggressiveness level, the Persian correction style, custom sound path, and excluded process names.
+Settings include enabled languages, detection mode, correction options (including whether spelling auto-correction and AutoCorrect are enabled — both are off by default), the correction aggressiveness level, the Persian correction style, custom sound path, update-check preferences, the QR-code hotkey, and excluded process names.
 
 The personal dictionary contains only the words and optional replacement pairs you add yourself. It is stored locally and is never uploaded. It does not contain typing history or captured text.
 
@@ -43,6 +43,14 @@ KeyFix can optionally write local diagnostic log files to help troubleshoot dete
 ## Short Buffer
 
 The app keeps only a short in-memory buffer of recent characters. The buffer is cleared when Enter or Tab is pressed, when the active layout is unsupported, when an excluded app is focused, or after an auto-switch/correction.
+
+## Update Checker
+
+When enabled, KeyFix periodically checks the public GitHub Releases API for a newer version. This is a read-only HTTPS request to `api.github.com`; it sends no typed text, no telemetry, and no account information. The response contains only the latest release tag and URL. If a newer version exists, KeyFix shows a local tray notification and can open the release page in your default browser. No installer is downloaded automatically.
+
+## QR Code Hotkey
+
+The QR-code feature reads the current text selection by briefly copying it to the clipboard (`Ctrl+C`), reading the clipboard, and then restoring the previous clipboard contents. The selected text is used only to generate a local QR-code image; it is never uploaded, logged, or stored.
 
 ## Development Tools
 

@@ -61,6 +61,7 @@ public static class Normalizer
             return folded;
         }
 
+        // Pre-size the builder and avoid per-call growth for the common case.
         StringBuilder builder = new(text.Length);
         foreach (char value in text)
         {

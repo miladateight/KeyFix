@@ -1,3 +1,4 @@
+using KeyboardLanguageGuard.Core.Input;
 namespace KeyboardLanguageGuard.Core.Settings;
 
 /// <summary>
@@ -34,6 +35,26 @@ public static class SettingsMigrator
                 changed |= SetLanguage(settings, LanguageKind.Arabic, enabled: false);
                 changed |= SetLanguage(settings, LanguageKind.German, enabled: false);
             }
+        }
+
+        if (settings.SettingsVersion < 9)
+        {
+            // 1.0.0: new update/QR features default to conservative, privacy-first values.
+            settings.CheckForUpdates = true;
+            if (settings.UpdateCheckIntervalHours <= 0)
+            {
+                settings.UpdateCheckIntervalHours = 24;
+            }
+
+            settings.EnableQrCodeHotkey = true;
+            if (!HotkeyDefinition.TryParse(settings.QrCodeHotkey, out _))
+            {
+                // Covers empty values and anything that would not install as a usable shortcut.
+                settings.QrCodeHotkey = HotkeyDefinition.Default.ToString();
+            }
+
+            // AutoCorrect stays off by default (same safe default as spelling auto-correction).
+            changed = true;
         }
 
         if (settings.SettingsVersion != AppSettings.CurrentSettingsVersion)

@@ -115,13 +115,13 @@ public sealed class CorrectionDecisionEngine
 
         bool originalValid = userKnown || (lookup.Length >= 2 && _dictionary.Contains(activeLanguage, lookup));
 
-        // 2. Spelling path (same active layout). A real correction wins immediately; a "considered
-        // but rejected" result (e.g. too low confidence) is remembered but must not block
-        // normalization below from getting its own chance at the same token.
+        // 2. Spelling path (same active layout). AutoCorrect forces the spelling path even when
+        // EnableSpellingDetection is off, so high-confidence common typos can be fixed on their own.
+        bool spellingEnabled = options.EnableSpellingDetection || options.EnableAutoCorrect;
         CorrectionDecision? spellingAttempt = null;
-        if (options.EnableSpellingDetection && !originalValid && lookup.Length >= MinimumWordLength)
+        if (spellingEnabled && !originalValid && lookup.Length >= MinimumWordLength)
         {
-            CorrectionDecision spelling = DecideSpelling(observed, lookup, activeLanguage, settings, options, previousToken);
+            CorrectionDecision spelling = DecideSpelling(observed, lookup, activeLanguage, settings, options, previousToken, forceAutoCorrect: options.EnableAutoCorrect);
             if (spelling.IsCorrection)
             {
                 return spelling;
@@ -184,7 +184,7 @@ public sealed class CorrectionDecisionEngine
         return CorrectionDecision.None(originalValid ? ReasonCode.OriginalWordValid : ReasonCode.NoCandidate);
     }
 
-    private CorrectionDecision DecideSpelling(string observed, string lookup, LanguageKind activeLanguage, AppSettings settings, CorrectionOptions options, string? previousToken)
+    private CorrectionDecision DecideSpelling(string observed, string lookup, LanguageKind activeLanguage, AppSettings settings, CorrectionOptions options, string? previousToken, bool forceAutoCorrect = false)
     {
         CorrectionInput input = new()
         {
@@ -221,7 +221,7 @@ public sealed class CorrectionDecisionEngine
 
         bool confident = best.Score >= policy.AutoThreshold;
         bool unambiguous = margin >= policy.AmbiguityMargin;
-        bool canAuto = confident && unambiguous && options.EnableSpellingAutoCorrection;
+        bool canAuto = confident && unambiguous && (options.EnableSpellingAutoCorrection || forceAutoCorrect);
 
         ReasonCode reason = !confident ? ReasonCode.CandidateConfidenceTooLow
             : !unambiguous ? ReasonCode.CandidateAmbiguous

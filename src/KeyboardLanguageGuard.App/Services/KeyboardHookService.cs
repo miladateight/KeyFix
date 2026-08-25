@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using KeyboardLanguageGuard.Core.Input;
 
 namespace KeyboardLanguageGuard.App.Services;
 
@@ -7,17 +8,27 @@ public sealed class KeyboardHookService : IDisposable
     private const int WhKeyboardLl = 13;
     private const int WmKeyDown = 0x0100;
     private const int WmSysKeyDown = 0x0104;
+    private const int WmKeyUp = 0x0101;
+    private const int WmSysKeyUp = 0x0105;
     private const uint LlkHfInjected = 0x00000010;
     private const int VkBack = 0x08;
     private const int VkReturn = 0x0D;
     private const int VkTab = 0x09;
     private const int VkControl = 0x11;
+    private const int VkShift = 0x10;
     private const int VkMenu = 0x12;
+    private const int VkLeftWin = 0x5B;
+    private const int VkRightWin = 0x5C;
 
     private readonly KeyboardLayoutService _keyboardLayoutService;
     private readonly LowLevelKeyboardProc _callback;
     private IntPtr _hook;
     private bool _disposed;
+    private HotkeyDefinition _qrHotkey = HotkeyDefinition.Default;
+
+    // Latched while the QR hotkey is physically held, so Windows key auto-repeat raises
+    // QrCodeRequested once per press instead of once per repeated WM_KEYDOWN.
+    private bool _qrHotkeyLatched;
 
     public KeyboardHookService(KeyboardLayoutService keyboardLayoutService)
     {
@@ -37,6 +48,30 @@ public sealed class KeyboardHookService : IDisposable
     /// also delete a character in the target app.
     /// </summary>
     public event EventHandler? UndoRequested;
+
+    /// <summary>Raised when the configured QR-code global hotkey is pressed.</summary>
+    public event EventHandler? QrCodeRequested;
+
+    /// <summary>
+    /// Gets or sets the QR-code global hotkey as a string like "Ctrl+Shift+Q". An unparseable
+    /// value falls back to the default binding rather than leaving the hook in a state where it
+    /// would swallow an unrelated key.
+    /// </summary>
+    public string QrCodeHotkey
+    {
+        get => _qrHotkey.ToString();
+        set
+        {
+            _qrHotkey = HotkeyDefinition.Parse(value);
+            _qrHotkeyLatched = false;
+        }
+    }
+
+    /// <summary>
+    /// When false the QR hotkey is ignored and passed through to the focused application, so a
+    /// user whose app already owns that shortcut can get it back.
+    /// </summary>
+    public bool QrCodeHotkeyEnabled { get; set; } = true;
 
     /// <summary>
     /// Cheap, synchronous predicate consulted inside the hook: return true to swallow the next
@@ -83,7 +118,15 @@ public sealed class KeyboardHookService : IDisposable
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
         int message = wParam.ToInt32();
-        if (nCode >= 0 && (message == WmKeyDown || message == WmSysKeyDown))
+        if (nCode >= 0 && (message == WmKeyUp || message == WmSysKeyUp))
+        {
+            KbdLlHookStruct release = Marshal.PtrToStructure<KbdLlHookStruct>(lParam);
+            if ((int)release.VkCode == _qrHotkey.VirtualKey)
+            {
+                _qrHotkeyLatched = false;
+            }
+        }
+        else if (nCode >= 0 && (message == WmKeyDown || message == WmSysKeyDown))
         {
             KbdLlHookStruct hook = Marshal.PtrToStructure<KbdLlHookStruct>(lParam);
             if ((hook.Flags & LlkHfInjected) != 0)
@@ -122,6 +165,19 @@ public sealed class KeyboardHookService : IDisposable
             return false;
         }
 
+        if (QrCodeHotkeyEnabled && IsHotkeyPressed(_qrHotkey, virtualKey))
+        {
+            // Swallow every repeat so the character never reaches the app, but only raise the
+            // event on the first WM_KEYDOWN of the press.
+            if (!_qrHotkeyLatched)
+            {
+                _qrHotkeyLatched = true;
+                QrCodeRequested?.Invoke(this, EventArgs.Empty);
+            }
+
+            return true;
+        }
+
         if (IsModifierDown(VkControl) || IsModifierDown(VkMenu))
         {
             return false;
@@ -135,6 +191,26 @@ public sealed class KeyboardHookService : IDisposable
 
         return false;
     }
+
+    /// <summary>
+    /// Exact modifier match: every modifier the hotkey names must be down and every one it does
+    /// not name must be up. Requiring the absence too keeps Ctrl+Shift+Alt+Q from firing a
+    /// Ctrl+Shift+Q binding and stealing a shortcut the focused app owns.
+    /// </summary>
+    private bool IsHotkeyPressed(HotkeyDefinition hotkey, int virtualKey)
+    {
+        if (!hotkey.IsValid || virtualKey != hotkey.VirtualKey)
+        {
+            return false;
+        }
+
+        return IsModifierDown(VkControl) == hotkey.Modifiers.HasFlag(HotkeyModifiers.Control) &&
+               IsModifierDown(VkShift) == hotkey.Modifiers.HasFlag(HotkeyModifiers.Shift) &&
+               IsModifierDown(VkMenu) == hotkey.Modifiers.HasFlag(HotkeyModifiers.Alt) &&
+               IsWinDown() == hotkey.Modifiers.HasFlag(HotkeyModifiers.Win);
+    }
+
+    private static bool IsWinDown() => IsModifierDown(VkLeftWin) || IsModifierDown(VkRightWin);
 
     private char? TryTranslateVirtualKey(int virtualKey)
     {

@@ -26,6 +26,8 @@ public sealed class TrayApplicationContext : ApplicationContext
     private readonly KeyboardHookService _hookService;
     private readonly NotifyIcon _notifyIcon;
     private readonly SynchronizationContext _uiContext;
+    private readonly UpdateCheckerService _updateChecker;
+    private readonly QrCodeService _qrCodeService = new();
     private UserDictionary _userDictionary;
     private CorrectionMemory _memory = new();
     private bool _memoryDirty;
@@ -58,11 +60,14 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         _notifyIcon.DoubleClick += (_, _) => ShowSettings();
 
+        _updateChecker = new UpdateCheckerService(_notifyIcon);
+
         _hookService = new KeyboardHookService(_layoutService);
         _hookService.CharacterTyped += OnCharacterTyped;
         _hookService.BackspacePressed += OnBackspacePressed;
         _hookService.BreakKeyPressed += OnBreakKeyPressed;
         _hookService.UndoRequested += OnUndoRequested;
+        _hookService.QrCodeRequested += OnQrCodeRequested;
         _hookService.BackspaceShouldUndo = ShouldUndoBackspace;
 
         if (!_settings.FirstRunCompleted && !ShowFirstRunSetup())
@@ -79,6 +84,9 @@ public sealed class TrayApplicationContext : ApplicationContext
             _notifyIcon.BalloonTipText = $"Windows keyboard hook failed. Error: {_hookService.LastStartError}";
             _notifyIcon.ShowBalloonTip(5000);
         }
+
+        ApplyHotkeyAndUpdateSettings();
+        _updateChecker.Start();
     }
 
     protected override void Dispose(bool disposing)
@@ -86,6 +94,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         if (disposing)
         {
             _hookService.Dispose();
+            _updateChecker.Dispose();
             if (_memoryDirty)
             {
                 _memoryStore.Save(_memory);
@@ -134,6 +143,12 @@ public sealed class TrayApplicationContext : ApplicationContext
         ToolStripMenuItem testAlertItem = new("Test alert");
         testAlertItem.Click += (_, _) => _alertService.Play(_settings);
 
+        ToolStripMenuItem qrCodeItem = new("QR code from selection");
+        qrCodeItem.Click += (_, _) => OnQrCodeRequested(this, EventArgs.Empty);
+
+        ToolStripMenuItem checkUpdateItem = new("Check for updates");
+        checkUpdateItem.Click += async (_, _) => await _updateChecker.CheckAsync();
+
         ToolStripMenuItem exitItem = new("Exit");
         exitItem.Click += (_, _) => ExitThread();
 
@@ -142,6 +157,8 @@ public sealed class TrayApplicationContext : ApplicationContext
         menu.Items.Add(pauseItem);
         menu.Items.Add(settingsItem);
         menu.Items.Add(testAlertItem);
+        menu.Items.Add(qrCodeItem);
+        menu.Items.Add(checkUpdateItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(exitItem);
 
@@ -184,8 +201,18 @@ public sealed class TrayApplicationContext : ApplicationContext
                 _memoryDirty = false;
             }
 
+            ApplyHotkeyAndUpdateSettings();
             WarmupSpellingIfEnabled();
         }
+    }
+
+    /// <summary>Pushes the QR-hotkey and update-check settings into the services that own them.</summary>
+    private void ApplyHotkeyAndUpdateSettings()
+    {
+        _hookService.QrCodeHotkeyEnabled = _settings.EnableQrCodeHotkey;
+        _hookService.QrCodeHotkey = _settings.QrCodeHotkey;
+        _updateChecker.IsEnabled = _settings.CheckForUpdates;
+        _updateChecker.CheckIntervalHours = _settings.UpdateCheckIntervalHours;
     }
 
     private void OnCharacterTyped(object? sender, char character)
@@ -303,10 +330,12 @@ public sealed class TrayApplicationContext : ApplicationContext
             _alertService.Play(_settings);
         }
 
-        // Only AutoSwitch mode may modify text, and only when the decision itself cleared the
-        // conservative confidence/ambiguity gate (CanAutoApply already respects the per-type
-        // enable flags — e.g. spelling stays off unless the user opted in).
-        if (_settings.Mode == DetectionMode.AutoSwitch && decision.CanAutoApply)
+        // AutoSwitch mode may modify text when the decision cleared the gate. AutoCorrect spelling
+        // fixes are applied outside AutoSwitch when explicitly enabled.
+        bool shouldApply = decision.CanAutoApply &&
+            (_settings.Mode == DetectionMode.AutoSwitch ||
+             (decision.Type == CorrectionType.SpellingCorrection && _settings.EnableAutoCorrect));
+        if (shouldApply)
         {
             _buffer.Clear();
             RememberForUndo(decision, request);
@@ -335,7 +364,9 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private void ShowDecisionNotification(CorrectionDecision decision)
     {
-        bool willApply = _settings.Mode == DetectionMode.AutoSwitch && decision.CanAutoApply;
+        bool willApply = decision.CanAutoApply &&
+            (_settings.Mode == DetectionMode.AutoSwitch ||
+             (decision.Type == CorrectionType.SpellingCorrection && _settings.EnableAutoCorrect));
         string what = decision.Type switch
         {
             CorrectionType.LayoutCorrection => $"keyboard layout ({decision.SuggestedLanguage})",
@@ -487,7 +518,7 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private void WarmupSpellingIfEnabled()
     {
-        if (!_settings.EnableSpellingDetection)
+        if (!_settings.EnableSpellingDetection && !_settings.EnableAutoCorrect)
         {
             return;
         }
@@ -505,6 +536,57 @@ public sealed class TrayApplicationContext : ApplicationContext
         };
 
         worker.Start();
+    }
+
+    private void OnQrCodeRequested(object? sender, EventArgs eventArgs)
+    {
+        Thread worker = new(() =>
+        {
+            // This whole body runs on a background thread, so nothing may escape: an unhandled
+            // exception here would terminate the tray app instead of showing a message.
+            try
+            {
+                string? text = _qrCodeService.CaptureSelectedText();
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    ShowQrCodeProblem("KeyFix could not read a text selection. Select some text and try again.");
+                    return;
+                }
+
+                if (!_qrCodeService.TryGeneratePng(text, out byte[] png, out string? error))
+                {
+                    ShowQrCodeProblem(error ?? "Could not generate the QR code.");
+                    return;
+                }
+
+                _uiContext.Post(_ =>
+                {
+                    using QrCodeForm form = new(png, text);
+                    form.ShowDialog();
+                }, null);
+            }
+            catch (Exception exception)
+            {
+                ShowQrCodeProblem($"Could not create a QR code: {exception.Message}");
+            }
+        })
+        {
+            IsBackground = true,
+            Name = "KeyFixQRCode"
+        };
+        worker.SetApartmentState(ApartmentState.STA);
+
+        worker.Start();
+    }
+
+    private void ShowQrCodeProblem(string message)
+    {
+        _uiContext.Post(_ =>
+        {
+            _notifyIcon.BalloonTipTitle = "KeyFix QR code";
+            _notifyIcon.BalloonTipText = message;
+            _notifyIcon.ShowBalloonTip(5000);
+        }, null);
     }
 
     private readonly record struct CorrectionRequest(

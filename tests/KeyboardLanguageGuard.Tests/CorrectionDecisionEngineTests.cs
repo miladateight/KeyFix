@@ -121,4 +121,54 @@ public sealed class CorrectionDecisionEngineTests
         Assert.Equal(CorrectionType.SpellingCorrection, d.Type);
         Assert.False(d.CanAutoApply);
     }
+
+    // ---- AutoCorrect (spelling without explicit spelling detection enabled) ---------------------
+
+    [Fact]
+    public void AutoCorrect_Corrects_Confident_Typo_When_Enabled()
+    {
+        var dict = new MemoryFrequencyDictionary().Add(LanguageKind.English, "receive", "relate", "release");
+        CorrectionDecisionEngine engine = MemoryEngine(dict);
+
+        CorrectionDecision d = engine.Decide("recieve", LanguageKind.English, TestSettings.WithAutoCorrect());
+
+        Assert.Equal(CorrectionType.SpellingCorrection, d.Type);
+        Assert.Equal("receive", d.ReplacementText);
+        Assert.True(d.CanAutoApply);
+    }
+
+    [Fact]
+    public void AutoCorrect_Disabled_Leaves_Typo_Alone()
+    {
+        var dict = new MemoryFrequencyDictionary().Add(LanguageKind.English, "receive");
+        CorrectionDecisionEngine engine = MemoryEngine(dict);
+
+        CorrectionDecision d = engine.Decide("recieve", LanguageKind.English, TestSettings.AllLanguages());
+
+        Assert.Equal(CorrectionType.NoCorrection, d.Type);
+    }
+
+    [Fact]
+    public void AutoCorrect_Is_Conservative_With_Ambiguous_Typos()
+    {
+        var dict = new MemoryFrequencyDictionary().Add(LanguageKind.English, "cat", "bat");
+        CorrectionDecisionEngine engine = MemoryEngine(dict);
+
+        CorrectionDecision d = engine.Decide("aat", LanguageKind.English, TestSettings.WithAutoCorrect());
+
+        Assert.Equal(CorrectionType.SpellingCorrection, d.Type);
+        Assert.False(d.CanAutoApply);
+        Assert.Equal(ReasonCode.CandidateAmbiguous, d.Reason);
+    }
+
+    [Theory]
+    [InlineData("https://github.com/KeyFix")]
+    [InlineData("ateight088@gmail.com")]
+    [InlineData("v1.0.0")]
+    public void AutoCorrect_Never_Touches_Protected_Tokens(string token)
+    {
+        CorrectionDecision d = _engine.Decide(token, LanguageKind.English, TestSettings.WithAutoCorrect());
+        Assert.Equal(CorrectionType.NoCorrection, d.Type);
+        Assert.Equal(ReasonCode.ProtectedToken, d.Reason);
+    }
 }

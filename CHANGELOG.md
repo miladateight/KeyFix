@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.0.0 - 2026-07-21
+
+### AutoCorrect
+- Added **AutoCorrect** setting: when enabled, KeyFix automatically fixes high-confidence single-token spelling mistakes (e.g. `recieve → receive`, `شلام → سلام`) without requiring spelling detection to be turned on. Off by default and governed by the existing aggressiveness/ambiguity gates so ambiguous cases stay suggestions.
+
+### QR code from selected text
+- Added global hotkey (**Ctrl+Shift+Q** by default) that turns the current text selection into a QR code. The original clipboard is preserved and restored. Users can change the shortcut from Settings, or switch it off entirely with the new **Enable the global QR-code shortcut** option.
+- QR codes are rendered locally with QRCoder; a small dialog shows the code and offers **Save as PNG**.
+- Shortcut strings are validated before being applied: a binding needs at least one modifier and one supported key (`A`-`Z`, `0`-`9`, `F1`-`F12`, `Space`, `Insert`, `Delete`, `Home`, `End`, `PageUp`, `PageDown`), and Settings rejects anything else instead of silently rebinding.
+- Selections larger than the QR payload limit, and unreadable selections, now report a tray notification instead of failing silently.
+
+### Update checker
+- Added a daily update check against GitHub Releases. When a newer version is found, KeyFix shows a tray balloon; clicking it opens the GitHub Releases page. No automatic download, no telemetry.
+- The check is re-evaluated hourly while KeyFix is resident, so a release published during a long session is still noticed.
+
+### Larger dictionaries
+- Expanded embedded word lists with additional high-frequency words for English, Persian, Arabic, and German via new `words-extra-*.txt` resources.
+
+### Performance
+- Cached the typed-text snapshot in `TextRingBuffer` so repeated reads no longer re-materialize the buffer on every property access.
+- Replaced per-lookup LINQ allocations in `SymSpellIndex.Lookup` with a reused list and explicit sort.
+- Made `FrequencyDictionary` load each language lazily so startup only pays for enabled languages.
+
+### Fixes
+- Fixed the embedded word lists loading in the wrong order: the supplementary `words-extra-*` lists were read before the main frequency-ordered lists, so they claimed the top frequency ranks and demoted the genuinely most common words (`the` fell from rank 0 to rank 49). This skewed every frequency-weighted spelling decision — `teh` was being "corrected" to `ten` instead of `the`.
+- Fixed equal-distance spelling candidates being returned in an unstable order. The lookup switched from a stable sort to `List<T>.Sort`, which is an unstable introsort, so which same-distance candidates survived the result-limit trim varied between calls.
+- Fixed the QR-code shortcut synthesizing `Ctrl+Shift+C` instead of `Ctrl+C`: the modifiers of the triggering hotkey were still physically held, so the copy step hit an unrelated command (developer tools, in a browser) and the capture returned nothing. Held modifiers are now released first.
+- Fixed a crash: generating a QR code from a selection larger than the symbol's capacity threw on a background thread, terminating the app.
+- Fixed the QR-code shortcut firing repeatedly while held, opening one dialog per key auto-repeat.
+- Hotkey matching is now an exact modifier match, so `Ctrl+Shift+Alt+Q` no longer triggers a `Ctrl+Shift+Q` binding and steal a shortcut the focused app owns.
+
+### Settings
+- Settings schema bumped to version 9. Migration preserves all existing choices and adds safe defaults for AutoCorrect, update checking, and the QR-code hotkey.
+
 ## 0.7.0 - 2026-07-12
 
 ### Intelligence completion
