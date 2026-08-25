@@ -39,7 +39,7 @@ jobs:
         run: |
           $tag = "${{ github.ref_name }}"
           $version = $tag.TrimStart("v")
-          $notesFile = "RELEASE_NOTES_v$version.md"
+          $notesFile = "docs/release-notes/v$version.md"
           if (Test-Path $notesFile) {
             "notes_file=$notesFile" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           } else {

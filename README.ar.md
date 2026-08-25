@@ -197,7 +197,7 @@ KeyFixSetup-0.7.0.exe
 - السجل التشخيصي مُعطَّل افتراضياً؛ وحتى عند تفعيله لا يُسجِّل النص المكتوب أبداً.
 - قائمة الاستثناء الافتراضية تشمل مديري كلمات المرور والطرفيات.
 
-اقرأ المزيد في [PRIVACY.md](PRIVACY.md).
+اقرأ المزيد في [PRIVACY.md](docs/PRIVACY.md).
 
 ## متطلّبات التطوير
 
@@ -276,9 +276,9 @@ data/                           مانيفست مصادر البيانات (data
 - موقع المشروع: [ateight.xyz/KeyFix](https://ateight.xyz/KeyFix/)
 - المستودع: [github.com/miladateight/KeyFix](https://github.com/miladateight/KeyFix)
 - أحدث إصدار: [releases/latest](https://github.com/miladateight/KeyFix/releases/latest)
-- الخصوصية: [PRIVACY.md](PRIVACY.md)
-- الأمان: [SECURITY.md](SECURITY.md)
-- إشعارات الطرف الثالث: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+- الخصوصية: [PRIVACY.md](docs/PRIVACY.md)
+- الأمان: [SECURITY.md](.github/SECURITY.md)
+- إشعارات الطرف الثالث: [THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md)
 
 ## القيود المعروفة
 
@@ -305,7 +305,7 @@ data/                           مانيفست مصادر البيانات (data
 
 ## المساهمة
 
-المساهمات مُرحّب بها. يُرجى قراءة [CONTRIBUTING.md](CONTRIBUTING.md) قبل فتح Pull Request. للتقارير الأمنية استخدم الآلية في [SECURITY.md](SECURITY.md).
+المساهمات مُرحّب بها. يُرجى قراءة [CONTRIBUTING.md](.github/CONTRIBUTING.md) قبل فتح Pull Request. للتقارير الأمنية استخدم الآلية في [SECURITY.md](.github/SECURITY.md).
 
 ## الترخيص
 

@@ -209,7 +209,7 @@ KeyFix is designed to avoid storing user text.
 - Diagnostic logging is off by default; when enabled, it never records your typed text.
 - The default exclusion list includes password managers and terminals.
 
-Read more in [PRIVACY.md](PRIVACY.md).
+Read more in [PRIVACY.md](docs/PRIVACY.md).
 
 ## Development Requirements
 
@@ -288,9 +288,9 @@ data/                           data source manifest (data/sources.json)
 - Project website: [ateight.xyz/KeyFix](https://ateight.xyz/KeyFix/)
 - Repository: [github.com/miladateight/KeyFix](https://github.com/miladateight/KeyFix)
 - Latest release: [github.com/miladateight/KeyFix/releases/latest](https://github.com/miladateight/KeyFix/releases/latest)
-- Privacy policy: [PRIVACY.md](PRIVACY.md)
-- Security policy: [SECURITY.md](SECURITY.md)
-- Third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+- Privacy policy: [PRIVACY.md](docs/PRIVACY.md)
+- Security policy: [SECURITY.md](.github/SECURITY.md)
+- Third-party notices: [THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md)
 
 ## Known Limitations
 
@@ -317,7 +317,7 @@ Planned for future releases (not present yet):
 
 ## Contributing
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. For security-related reports, use the process in [SECURITY.md](SECURITY.md).
+Contributions are welcome. Please read [CONTRIBUTING.md](.github/CONTRIBUTING.md) before opening a pull request. For security-related reports, use the process in [SECURITY.md](.github/SECURITY.md).
 
 ## License
 

@@ -197,7 +197,7 @@ KeyFix ist so gebaut, dass getippter Text nicht gespeichert wird.
 - Das Diagnose-Log ist standardmäßig aus; auch wenn aktiviert, wird nie getippter Text protokolliert.
 - Die Standard-Ausschlussliste enthält Passwort-Manager und Terminals.
 
-Mehr dazu in [PRIVACY.md](PRIVACY.md).
+Mehr dazu in [PRIVACY.md](docs/PRIVACY.md).
 
 ## Entwicklungsvoraussetzungen
 
@@ -276,9 +276,9 @@ data/                           Manifest der Datenquellen (data/sources.json)
 - Projekt-Website: [ateight.xyz/KeyFix](https://ateight.xyz/KeyFix/)
 - Repository: [github.com/miladateight/KeyFix](https://github.com/miladateight/KeyFix)
 - Neueste Version: [releases/latest](https://github.com/miladateight/KeyFix/releases/latest)
-- Datenschutz: [PRIVACY.md](PRIVACY.md)
-- Sicherheit: [SECURITY.md](SECURITY.md)
-- Drittanbieter-Hinweise: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+- Datenschutz: [PRIVACY.md](docs/PRIVACY.md)
+- Sicherheit: [SECURITY.md](.github/SECURITY.md)
+- Drittanbieter-Hinweise: [THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md)
 
 ## Bekannte Einschränkungen
 
@@ -305,7 +305,7 @@ Geplant für spätere Versionen (noch nicht vorhanden):
 
 ## Mitwirken
 
-Beiträge sind willkommen. Bitte lies [CONTRIBUTING.md](CONTRIBUTING.md), bevor du einen Pull Request öffnest. Für Sicherheitsmeldungen nutze das Verfahren in [SECURITY.md](SECURITY.md).
+Beiträge sind willkommen. Bitte lies [CONTRIBUTING.md](.github/CONTRIBUTING.md), bevor du einen Pull Request öffnest. Für Sicherheitsmeldungen nutze das Verfahren in [SECURITY.md](.github/SECURITY.md).
 
 ## Lizenz
 

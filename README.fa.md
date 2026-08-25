@@ -197,7 +197,7 @@ KeyFix طوری طراحی شده که متن کاربر را ذخیره نکن�
 - لاگ تشخیصی پیش‌فرض خاموش است؛ در صورت فعال‌سازی هم هرگز متن تایپ‌شده را ثبت نمی‌کند.
 - لیست پیش‌فرضِ مستثنی شامل مدیرهای رمز و ترمینال‌هاست.
 
-جزئیات بیشتر در [PRIVACY.md](PRIVACY.md).
+جزئیات بیشتر در [PRIVACY.md](docs/PRIVACY.md).
 
 ## نیازمندی‌های توسعه
 
@@ -276,9 +276,9 @@ data/                           مانیفست منابع داده (data/sources
 - وب‌سایت پروژه: [ateight.xyz/KeyFix](https://ateight.xyz/KeyFix/)
 - مخزن: [github.com/miladateight/KeyFix](https://github.com/miladateight/KeyFix)
 - آخرین نسخه: [releases/latest](https://github.com/miladateight/KeyFix/releases/latest)
-- حریم خصوصی: [PRIVACY.md](PRIVACY.md)
-- امنیت: [SECURITY.md](SECURITY.md)
-- اطلاعیه‌های شخص‌ثالث: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+- حریم خصوصی: [PRIVACY.md](docs/PRIVACY.md)
+- امنیت: [SECURITY.md](.github/SECURITY.md)
+- اطلاعیه‌های شخص‌ثالث: [THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md)
 
 ## محدودیت‌های شناخته‌شده
 
@@ -305,7 +305,7 @@ data/                           مانیفست منابع داده (data/sources
 
 ## مشارکت
 
-مشارکت‌ها خوش‌آمدند. لطفاً پیش از باز کردن Pull Request فایل [CONTRIBUTING.md](CONTRIBUTING.md) را بخوانید. برای گزارش‌های امنیتی از روش [SECURITY.md](SECURITY.md) استفاده کنید.
+مشارکت‌ها خوش‌آمدند. لطفاً پیش از باز کردن Pull Request فایل [CONTRIBUTING.md](.github/CONTRIBUTING.md) را بخوانید. برای گزارش‌های امنیتی از روش [SECURITY.md](.github/SECURITY.md) استفاده کنید.
 
 ## مجوز
 
