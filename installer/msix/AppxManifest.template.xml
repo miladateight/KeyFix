@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Package manifest for the Microsoft Store build.
+
+  This is a template. scripts\package-msix.ps1 substitutes the {{TOKEN}} values
+  and writes the real AppxManifest.xml into the package layout; nothing here is
+  edited by hand at build time.
+
+  Identity/@Name, Identity/@Publisher and PublisherDisplayName must match the
+  values Partner Center shows under Product identity for the reserved app name.
+  Until the app name is reserved they carry obvious placeholders, and the
+  script refuses to build a Store package with those still in place.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap5 rescap">
+
+  <Identity
+    Name="{{IDENTITY_NAME}}"
+    Publisher="{{IDENTITY_PUBLISHER}}"
+    Version="{{VERSION}}"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>KeyFix</DisplayName>
+    <PublisherDisplayName>{{PUBLISHER_DISPLAY_NAME}}</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-US" />
+    <Resource Language="fa-IR" />
+    <Resource Language="ar" />
+    <Resource Language="de-DE" />
+  </Resources>
+
+  <Applications>
+    <!--
+      EntryPoint Windows.FullTrustApplication: an ordinary Win32 desktop app in a
+      package, not a sandboxed UWP app. The low-level keyboard hook it installs
+      is a Win32 API and needs that, but it needs no elevation — the app runs
+      asInvoker, and the MSIX install itself is per-user.
+    -->
+    <Application Id="App" Executable="KeyFix.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="KeyFix"
+        Description="Fixes words typed with the wrong keyboard layout, and common misspellings, in English, Persian, Arabic and German. Fully offline."
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
+      </uap:VisualElements>
+
+      <Extensions>
+        <!--
+          Start with Windows. A packaged app cannot use the HKCU Run key: its
+          registry writes are virtualised into the package hive, where the
+          Windows startup scan never looks, so the setting would appear to work
+          and silently do nothing. Declared disabled, and the user controls it
+          from Settings > Apps > Startup.
+        -->
+        <uap5:Extension Category="windows.startupTask">
+          <uap5:StartupTask
+            TaskId="KeyFixStartup"
+            Enabled="false"
+            DisplayName="KeyFix" />
+        </uap5:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <!--
+      runFullTrust is what makes this a packaged desktop app rather than a UWP
+      one. It is a restricted capability: the Store reviews it, and the review
+      notes have to explain plainly why a typing-correction tool watches the
+      keyboard.
+    -->
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

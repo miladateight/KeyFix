@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
+using KeyboardLanguageGuard.App.Services;
 using KeyboardLanguageGuard.Core.Input;
 using KeyboardLanguageGuard.Core.Settings;
 
@@ -102,10 +103,19 @@ public sealed class SettingsForm : Form
         correctionsPanel.Controls.Add(Field("Persian style", _persianStyle));
         corrections.Controls.Add(correctionsPanel);
 
-        GroupBox updatesAndQr = new() { Text = "Updates and shortcuts", Width = 535, Height = 110, AutoSize = true };
+        // The Store build says "Shortcuts" only: it has no update controls, because
+        // the Store keeps its own copy up to date and an app that sends people
+        // elsewhere for an installer is both confusing and against store policy.
+        bool packaged = PackageContext.IsPackaged;
+
+        GroupBox updatesAndQr = new() { Text = packaged ? "Shortcuts" : "Updates and shortcuts", Width = 535, Height = 110, AutoSize = true };
         FlowLayoutPanel updatesQrPanel = new() { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, Padding = new Padding(10), AutoSize = true };
-        updatesQrPanel.Controls.Add(_checkForUpdates);
-        updatesQrPanel.Controls.Add(Field("Update check interval (hours)", _updateInterval));
+        if (!packaged)
+        {
+            updatesQrPanel.Controls.Add(_checkForUpdates);
+            updatesQrPanel.Controls.Add(Field("Update check interval (hours)", _updateInterval));
+        }
+
         updatesQrPanel.Controls.Add(_enableQrCodeHotkey);
         updatesQrPanel.Controls.Add(Field("QR-code hotkey", _qrCodeHotkey));
         updatesAndQr.Controls.Add(updatesQrPanel);
@@ -118,7 +128,16 @@ public sealed class SettingsForm : Form
         root.Controls.Add(_playSound);
         root.Controls.Add(_showNotification);
         root.Controls.Add(_autoCorrectTypedText);
-        root.Controls.Add(_launchAtStartup);
+
+        // A packaged app's writes to the Run key go into a virtualised hive that
+        // the Windows startup scan never reads, so this checkbox would report
+        // success and do nothing. The package declares a startup task instead,
+        // which Windows lists under Settings > Apps > Startup.
+        if (!packaged)
+        {
+            root.Controls.Add(_launchAtStartup);
+        }
+
         root.Controls.Add(SoundPicker());
         root.Controls.Add(Field("Excluded processes, one per line", _excludedProcesses));
         root.Controls.Add(Buttons());

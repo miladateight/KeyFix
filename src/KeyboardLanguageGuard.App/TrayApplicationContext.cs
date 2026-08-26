@@ -146,9 +146,6 @@ public sealed class TrayApplicationContext : ApplicationContext
         ToolStripMenuItem qrCodeItem = new("QR code from selection");
         qrCodeItem.Click += (_, _) => OnQrCodeRequested(this, EventArgs.Empty);
 
-        ToolStripMenuItem checkUpdateItem = new("Check for updates");
-        checkUpdateItem.Click += async (_, _) => await _updateChecker.CheckAsync();
-
         ToolStripMenuItem exitItem = new("Exit");
         exitItem.Click += (_, _) => ExitThread();
 
@@ -158,7 +155,17 @@ public sealed class TrayApplicationContext : ApplicationContext
         menu.Items.Add(settingsItem);
         menu.Items.Add(testAlertItem);
         menu.Items.Add(qrCodeItem);
-        menu.Items.Add(checkUpdateItem);
+
+        // The Store updates its own copy, so the packaged build offers no manual
+        // check: it would only ever announce a version the user cannot install
+        // from where they got the app.
+        if (!PackageContext.IsPackaged)
+        {
+            ToolStripMenuItem checkUpdateItem = new("Check for updates");
+            checkUpdateItem.Click += async (_, _) => await _updateChecker.CheckAsync(announceWhenUpToDate: true);
+            menu.Items.Add(checkUpdateItem);
+        }
+
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(exitItem);
 
@@ -211,7 +218,11 @@ public sealed class TrayApplicationContext : ApplicationContext
     {
         _hookService.QrCodeHotkeyEnabled = _settings.EnableQrCodeHotkey;
         _hookService.QrCodeHotkey = _settings.QrCodeHotkey;
-        _updateChecker.IsEnabled = _settings.CheckForUpdates;
+
+        // Never in the Store build: that copy is updated by the Store itself, and
+        // pointing its users at a GitHub release would send them somewhere they
+        // did not install the app from.
+        _updateChecker.IsEnabled = _settings.CheckForUpdates && !PackageContext.IsPackaged;
         _updateChecker.CheckIntervalHours = _settings.UpdateCheckIntervalHours;
     }
 
