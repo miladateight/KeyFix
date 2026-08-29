@@ -106,4 +106,31 @@ public sealed class SettingsMigrationTests
         Assert.Equal("Ctrl+Shift+Q", settings.QrCodeHotkey);
         Assert.False(settings.EnableAutoCorrect);
     }
+
+    [Fact]
+    public void V7_Json_Upgrade_Preserves_Choices_And_Adds_Safe_Defaults()
+    {
+        // Deserialised from JSON rather than constructed, because that is how a
+        // real upgrade arrives: a file written by an older version, missing every
+        // field added since. Constructing an AppSettings would silently supply
+        // today's defaults for those fields and test nothing.
+        const string v7Json = """
+        {
+          "SettingsVersion": 7,
+          "Mode": 2,
+          "FirstRunCompleted": true,
+          "EnableSpellingAutoCorrection": true,
+          "CorrectionAggressiveness": 1
+        }
+        """;
+
+        AppSettings settings = JsonSerializer.Deserialize<AppSettings>(v7Json)!;
+        SettingsMigrator.Migrate(settings);
+
+        Assert.Equal(AppSettings.CurrentSettingsVersion, settings.SettingsVersion);
+        Assert.True(settings.EnableSpellingAutoCorrection);                       // user choice preserved
+        Assert.Equal(CorrectionAggressiveness.Balanced, settings.CorrectionAggressiveness);
+        Assert.False(settings.EnableDiagnosticLogging);                           // safe v8 default
+        Assert.Equal(PersianCorrectionStyle.PreserveUserStyle, settings.PersianCorrectionStyle);
+    }
 }
