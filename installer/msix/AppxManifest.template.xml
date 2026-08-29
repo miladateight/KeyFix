@@ -35,11 +35,14 @@
     <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
   </Dependencies>
 
+  <!--
+    English only, and deliberately. KeyFix corrects Persian, Arabic and German
+    typing, but every word of its own interface is English. Declaring those
+    languages here would tell the Store the app speaks them and hand a Persian
+    speaker an English window.
+  -->
   <Resources>
     <Resource Language="en-US" />
-    <Resource Language="fa-IR" />
-    <Resource Language="ar" />
-    <Resource Language="de-DE" />
   </Resources>
 
   <Applications>
